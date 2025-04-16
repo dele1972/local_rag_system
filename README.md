@@ -5,20 +5,25 @@ Lokales RAG-System mit Ollama und LangChain
 - Python 3.11
 - Ollama lokal installiert mit Modellen wie llama3, mistral, phi
 
-## Start (lokal auf Windows ohne Docker)
+
+## 1. Start Backend (Docker)
+
+### 0 - Erstelle den Docker Container (sofern noch nicht vorhanden)
 ```
-pip install -r requirements.txt
-python app/main.py
+docker build -t lokales-rag-claude .
 ```
 
-## Start mit Docker (Backend)
+### 1A - Starte das Backend (Variante A - per Docker Compose)
 ```
-docker build -t lokales-rag .
-docker run -v "${PWD.Path}/documents:/app/documents" -p 7860:7860 lokales-rag
-docker run --name rag-system -v "${PWD.Path}/documents:/app/documents" -p 7860:7860 lokales-rag
-
+docker-compose up
 ```
 
+### 1B - Starte das Backend (Variante B - manuell)
+```
+docker run --add-host=host.docker.internal:host-gateway -v "./documents:/app/documents" -p 7860:7860 lokales-rag-claude
+```
+
+## 2. Oberfläche aufrufen
 Dann öffne deinen Browser unter: http://localhost:7860
 
 ## Nutzung

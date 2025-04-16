@@ -1,11 +1,13 @@
 # requirements.txt
+#langchain==0.1.4
 langchain-community
 langchain-ollama
 faiss-cpu
+requests
 streamlit
+gradio
 unstructured
 pypdf
 pymupdf
 markdown
 ollama
-gradio
