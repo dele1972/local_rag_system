@@ -13,13 +13,7 @@ def get_embeddings(model_name):
     )
 
 def build_vectorstore(documents, model_name, persist_directory=None):
-    """Create a Chroma vector store from documents with persistence option
-    
-    Args:
-        documents: Liste der zu vektorisierenden Dokumente
-        model_name: Name des Ollama-Modells für Embeddings
-        persist_directory: Optional - Pfad zum Speichern der Vektorendatenbank
-    """
+    """Create a Chroma vector store from documents with persistence option"""
     embeddings = get_embeddings(model_name)
     
     if persist_directory:
@@ -29,7 +23,6 @@ def build_vectorstore(documents, model_name, persist_directory=None):
             embedding=embeddings,
             persist_directory=persist_directory
         )
-        vectorstore.persist()  # Sicherstellen, dass Änderungen geschrieben werden
     else:
         # In-Memory Vektorspeicher
         vectorstore = Chroma.from_documents(
@@ -68,23 +61,21 @@ def delete_vectorstore(persist_directory):
     return False
 
 def list_vectorstores(base_directory):
-    """List all available vector stores in a directory
-    
-    Args:
-        base_directory: Basisverzeichnis für die Suche nach Vektorspeichern
-    
-    Returns:
-        Dict mit Name->Pfad der gefundenen Vektorspeicher
-    """
+    """List all available vector stores in a directory"""
     vectorstores = {}
     
     if not os.path.exists(base_directory):
         return vectorstores
     
-    # Suche nach Unterverzeichnissen mit Chroma-Dateien
+    # Suche direkt nach Vektorspeichern
     for item in os.listdir(base_directory):
         item_path = os.path.join(base_directory, item)
-        if os.path.isdir(item_path) and "chroma" in os.listdir(item_path):
-            vectorstores[item] = item_path
+        if os.path.isdir(item_path):
+            # Prüfen auf typische Chroma-Dateien
+            chroma_files = ["chroma.sqlite3", "chroma_metadata.parquet"]
+            for chroma_file in os.listdir(item_path):
+                if any(cf in chroma_file for cf in chroma_files):
+                    vectorstores[item] = item_path
+                    break
     
     return vectorstores

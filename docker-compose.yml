@@ -8,7 +8,8 @@ services:
     ports:
       - "7860:7860"
     volumes:
-      - ./documents:/app/documents
+      - .:/app
+      - ./documents:/documents
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:

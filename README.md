@@ -60,6 +60,21 @@ docker builder prune --all --force
 
 ### Docker foo
 
+#### Docker Compose nach Änderungen
+
+```
+docker-compose down
+```
+
+```
+docker-compose build --no-cache
+```
+
+```
+docker-compose up
+```
+
+#### Docker
 ```
 docker stop <container-id>
 docker rm <container-id>
