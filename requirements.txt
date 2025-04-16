@@ -1,0 +1,11 @@
+# requirements.txt
+langchain-community
+langchain-ollama
+faiss-cpu
+streamlit
+unstructured
+pypdf
+pymupdf
+markdown
+ollama
+gradio
