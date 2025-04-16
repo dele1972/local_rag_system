@@ -10,7 +10,7 @@ Lokales RAG-System mit Ollama und LangChain
 
 ### 0 - Erstelle den Docker Container (sofern noch nicht vorhanden)
 ```
-docker build -t lokales-rag-claude .
+docker build -t lokales-rag-claude_v2 .
 ```
 
 ### 1A - Starte das Backend (Variante A - per Docker Compose)
@@ -20,7 +20,7 @@ docker-compose up
 
 ### 1B - Starte das Backend (Variante B - manuell)
 ```
-docker run --add-host=host.docker.internal:host-gateway -v "./documents:/app/documents" -p 7860:7860 lokales-rag-claude
+docker run --add-host=host.docker.internal:host-gateway -v "./documents:/app/documents" -p 7860:7860 lokales-rag-claude_v2
 ```
 
 ## 2. Oberfläche aufrufen
@@ -65,6 +65,54 @@ docker stop <container-id>
 docker rm <container-id>
 docker run -v ... lokales-rag
 ```
+
+## Changehistory
+
+### V2
+
+#### Wichtigste Änderungen
+
+Diese Änderungen bieten dir ein erheblich verbessertes RAG-System mit:
+
+Höherer Antwortqualität durch angepasste Prompts und optimierte Chain-Typen
+Persistenter Speicherung von Embeddings mit Chroma
+Einer intuitiveren Benutzeroberfläche mit mehr Funktionen
+Besserer Verwaltung von Vektorspeichern für verschiedene Dokumentensammlungen
+
+#### 1. In app/rag.py
+
+- **Prompt-Templates**: Ich habe ein anpassbares Prompt-Template hinzugefügt, das die Qualität der Antworten verbessert, indem es explizite Anweisungen für das LLM enthält.
+- **Chain-Typen**: Die Funktion build_qa_chain unterstützt jetzt verschiedene Chain-Typen:
+	- `stuff`: Standardmethode für kleinere Dokumentensammlungen
+	- `map_reduce`: Besser für große Dokumentenmengen, verarbeitet jeden Chunk separat
+	- `refine`: Iterativer Ansatz mit schrittweiser Verfeinerung der Antwort
+	- `map_rerank`: Ordnet Antworten nach Relevanz
+
+#### 2. In app/vectorstore.py
+
+- **Chroma statt FAISS**: Ersetzt FAISS durch Chroma, das eine persistente Speicherung ermöglicht
+- **Bessere Vektorstore-Verwaltung**:
+	- Funktionen zum Auflisten, Laden und Löschen von Vektorspeichern
+	- Verbesserte Fehlerbehandlung und Rückgabewerte
+	- Strukturierte Verzeichnisorganisation für Vektorspeicher
+
+#### 3. In app/ui.py
+
+- **Tab-basierte UI**: Trennung von Einrichtung und Fragebereich für bessere Übersicht
+- **Chain-Typ-Auswahl**: Dropdown zur Auswahl des gewünschten Chain-Typs
+- **Vektorspeicher-Management**:
+	- Anzeige und Auswahl vorhandener Vektorspeicher
+	- Buttons zum Laden und Löschen von Vektorspeichern
+	- Refresh-Funktion für die Vektorspeicher-Liste
+- **Verbesserte Statusanzeigen**: Ausführlichere Informationen über den aktuellen Zustand des Systems
+
+#### 4. In requirements.txt
+
+- **Aktualisierte Abhängigkeiten**:
+	- Hinzugefügt: `chromadb` für persistente Vektorspeicherung
+	- Versionsangaben für bessere Kompatibilität
+	- `sentence-transformers` als optionale Alternative zu Ollama-Embeddings
+
 ---
 
 **Hinweis**: Es wird vorausgesetzt, dass Ollama korrekt läuft und die Modelle geladen werden können. Die Modelle müssen vorher über `ollama pull` heruntergeladen werden.
