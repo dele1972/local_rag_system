@@ -73,9 +73,14 @@ def list_vectorstores(base_directory):
         if os.path.isdir(item_path):
             # Prüfen auf typische Chroma-Dateien
             chroma_files = ["chroma.sqlite3", "chroma_metadata.parquet"]
-            for chroma_file in os.listdir(item_path):
-                if any(cf in chroma_file for cf in chroma_files):
-                    vectorstores[item] = item_path
+            has_chroma_files = False
+            
+            for cf in chroma_files:
+                if os.path.exists(os.path.join(item_path, cf)):
+                    has_chroma_files = True
                     break
+            
+            if has_chroma_files:
+                vectorstores[item] = item_path
     
     return vectorstores

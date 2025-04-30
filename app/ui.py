@@ -49,13 +49,28 @@ def setup_qa(model, doc_path, chain_type, vectorstore_name):
         return f"✅ Modell '{model}' mit Chain-Typ '{chain_type}' geladen\n" \
                f"ℹ️ {chain_desc}\n" \
                f"📚 {len(docs)} Dokumentenabschnitte aus {len(loaded_files)} Dateien verarbeitet.\n" \
-               f"💾 Vektorstore '{vectorstore_name}' gespeichert unter {vs_path}"
+               f"💾 Vektorspeicher '{vectorstore_name}' gespeichert unter {vs_path}\n\n" \
+               f"Bitte klicke 'Vektorspeicher aktualisieren', um die Liste zu aktualisieren."
     
     except Exception as e:
         return f"⚠️ Fehler: {str(e)}"
 
-def load_existing_vectorstore(model, vectorstore_path, chain_type):
+# Diese Funktion wird nicht mehr benötigt, da wir jetzt direkt mit den Namen arbeiten
+
+def load_existing_vectorstore(model, vectorstore_selection, chain_type):
     global qa_chain, current_vectorstore, current_model, current_chain_type
+    
+    if not vectorstore_selection or vectorstore_selection == "Keine Vectorstores vorhanden":
+        return "⚠️ Bitte wähle einen Vektorspeicher aus"
+    
+    # Hole den Pfad aus der Liste der verfügbaren Vectorstores
+    vs_base_dir = os.path.join(config.base_path, ".vectorstores")
+    vectorstores = list_vectorstores(vs_base_dir)
+    
+    if vectorstore_selection not in vectorstores:
+        return f"⚠️ Vektorspeicher '{vectorstore_selection}' nicht gefunden"
+    
+    vectorstore_path = vectorstores[vectorstore_selection]
     
     # Setze globale Variablen
     current_model = model
@@ -74,7 +89,7 @@ def load_existing_vectorstore(model, vectorstore_path, chain_type):
         
         chain_desc = get_chain_type_description(chain_type)
         
-        return f"✅ Vektorspeicher aus {vectorstore_path} geladen\n" \
+        return f"✅ Vektorspeicher '{vectorstore_selection}' geladen\n" \
                f"✅ Modell '{model}' mit Chain-Typ '{chain_type}' initialisiert\n" \
                f"ℹ️ {chain_desc}"
     
@@ -93,12 +108,16 @@ def refresh_vectorstores(doc_path):
     # Sicherstellen, dass das Verzeichnis existiert
     if not os.path.exists(vs_base_dir):
         os.makedirs(vs_base_dir, exist_ok=True)
-        return []  # Leere Liste zurückgeben
+        return ["Keine Vectorstores vorhanden"]  # Leere Liste mit Standardnachricht
     
     vectorstores = list_vectorstores(vs_base_dir)
     
-    # Liste der Auswahlmöglichkeiten als "name (pfad)" zurückgeben
-    return [f"{name} ({path})" for name, path in vectorstores.items()]
+    if not vectorstores:
+        return ["Keine Vectorstores vorhanden"]
+    
+    # Kürzere Formatierung für bessere Lesbarkeit: Nur Namen zurückgeben
+    # Der vollständige Pfad wird in den Wert-Teil des Dropdown-Elements gespeichert
+    return [name for name in vectorstores.keys()]
 
 def ask_question(question):
     global qa_chain, current_model, current_chain_type
@@ -184,12 +203,17 @@ def start_ui():
                     gr.Markdown(f"**Ollama Status:** {ollama_status} ({config.get_ollama_base_url()})")
                     
                     # Vorhandene Vektorspeicher anzeigen
+                    vectorstores = []
+                    vs_base_dir = os.path.join(config.base_path, ".vectorstores")
+                    if os.path.exists(vs_base_dir):
+                        vectorstores_dict = list_vectorstores(vs_base_dir)
+                        vectorstores = list(vectorstores_dict.keys())
+                    
                     vectorstore_list = gr.Dropdown(
                         label="Vorhandene Vektorspeicher",
                         info="Wähle einen gespeicherten Vektorspeicher zum Laden",
-                        choices=[],  # Beginne mit leerer Liste
-                        interactive=True,
-                        allow_custom_value=True  # Diese Zeile hinzufügen
+                        choices=vectorstores,
+                        interactive=True
                     )
                     
                     with gr.Row():
@@ -215,68 +239,33 @@ def start_ui():
         )
         
         # Handler für das Laden eines vorhandenen Vektorspeichers
-        def load_selected_vectorstore(model, vectorstore_selection, chain_type, doc_path):
-            vs_base_dir = os.path.join(config.base_path, ".vectorstores")
-            vectorstores = list_vectorstores(vs_base_dir)
-            vs_items = list(vectorstores.items())
-
-            # Prüfen, ob eine Auswahl getroffen wurde
-            if vectorstore_selection is None:
-                return "⚠️ Bitte einen Vektorspeicher auswählen"
-
-            # Wenn vectorstore_selection ein String ist (Name des ausgewählten Speichers)
-            if isinstance(vectorstore_selection, str):
-                # Parse den Pfad aus der Auswahl (Format: "name (path)")
-                import re
-                match = re.search(r'\((.*?)\)', vectorstore_selection)
-                if match:
-                    vs_path = match.group(1)
-                    return load_existing_vectorstore(model, vs_path, chain_type)
-
-            # Wenn vectorstore_selection ein Index ist (alte Methode)
-            elif isinstance(vectorstore_selection, int) and 0 <= vectorstore_selection < len(vs_items):
-                vs_name, vs_path = vs_items[vectorstore_selection]
-                return load_existing_vectorstore(model, vs_path, chain_type)
-
-            return "⚠️ Fehler beim Laden des Vektorspeichers"
-        
         load_vs_btn.click(
-            load_selected_vectorstore,
-            inputs=[model, vectorstore_list, chain_type, doc_path],
+            load_existing_vectorstore,
+            inputs=[model, vectorstore_list, chain_type],
             outputs=status
         )
         
         # Handler für das Löschen eines Vektorspeichers
-        def delete_selected_vectorstore(vectorstore_selection, doc_path):
+        def delete_selected_vectorstore(vectorstore_selection):
             vs_base_dir = os.path.join(config.base_path, ".vectorstores")
             vectorstores = list_vectorstores(vs_base_dir)
-            vs_items = list(vectorstores.items())
             
             # Prüfen, ob eine Auswahl getroffen wurde
-            if vectorstore_selection is None:
+            if not vectorstore_selection:
                 return "⚠️ Bitte einen Vektorspeicher zum Löschen auswählen"
             
-            # Wenn vectorstore_selection ein String ist (Name des ausgewählten Speichers)
-            if isinstance(vectorstore_selection, str):
-                # Parse den Pfad aus der Auswahl (Format: "name (path)")
-                import re
-                match = re.search(r'\((.*?)\)', vectorstore_selection)
-                if match:
-                    vs_path = match.group(1)
-                    result = delete_vs(vs_path)
-                    return result
-            
-            # Wenn vectorstore_selection ein Index ist (alte Methode)
-            elif isinstance(vectorstore_selection, int) and 0 <= vectorstore_selection < len(vs_items):
-                vs_name, vs_path = vs_items[vectorstore_selection]
+            # Finde den vollständigen Pfad zum ausgewählten Vektorspeicher
+            if vectorstore_selection in vectorstores:
+                vs_path = vectorstores[vectorstore_selection]
                 result = delete_vs(vs_path)
+                # UI aktualisieren
                 return result
             
-            return "⚠️ Bitte einen Vektorspeicher zum Löschen auswählen"
+            return "⚠️ Ausgewählter Vektorspeicher nicht gefunden"
         
         delete_vs_btn.click(
             delete_selected_vectorstore,
-            inputs=[vectorstore_list, doc_path],
+            inputs=[vectorstore_list],
             outputs=status
         )
         
