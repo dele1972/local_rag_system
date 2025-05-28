@@ -9,6 +9,7 @@ gradio>=4.0.0
 unstructured>=0.11.0
 pypdf>=3.17.0
 pymupdf>=1.23.0
+pytesseract>=0.3.10
 markdown>=3.5.0
 ollama>=0.1.0
 sentence-transformers>=2.2.2

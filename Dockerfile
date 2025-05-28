@@ -15,12 +15,21 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Tesseract OCR mit deutscher Sprache installieren
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-deu \
+    libtesseract-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 
 COPY app ./app
 COPY documents ./documents
 COPY README.md .
 
 ENV PYTHONPATH=/app
+# Tesseract Umgebungsvariable setzen
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 
 # Add a healthcheck
 HEALTHCHECK --interval=30s --timeout=5s \
