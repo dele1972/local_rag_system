@@ -1,5 +1,5 @@
 # app/vectorstore.py
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_ollama.embeddings import OllamaEmbeddings
 from app.config import config
 import os
