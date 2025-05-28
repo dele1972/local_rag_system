@@ -4,6 +4,8 @@ Lokales RAG-System mit Ollama und LangChain
 ## Voraussetzungen
 - Python 3.11
 - Ollama lokal installiert mit Modellen wie llama3, mistral, phi
+- mit `ollama list` die Liste der installierten Modelle anzeigen
+- in `self.available_models = ["llama3.2", "mistral", "deepseek-r1"]` die Liste entsprechend anpassen
 
 
 ## 1. Start Backend (Docker)

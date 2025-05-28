@@ -6,7 +6,7 @@ class ConfigManager:
     def __init__(self):
         self.base_path = Path(os.path.dirname(os.path.abspath(__file__))).parent
         self.documents_path = os.path.join(self.base_path, "documents")
-        self.available_models = ["llama3.2", "mistral", "deepseek-r1"]
+        self.available_models = ["llama3.2", "gemma3:12b", "qwen3:8b", "mistral", "deepseek-r1"]
         
         # Detect if running in Docker
         self.in_docker = os.path.exists("/.dockerenv")
