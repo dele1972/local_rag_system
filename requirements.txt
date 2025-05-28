@@ -13,3 +13,10 @@ pytesseract>=0.3.10
 markdown>=3.5.0
 ollama>=0.1.0
 sentence-transformers>=2.2.2
+# Neue Abhängigkeiten für Office-Dateien
+python-docx>=0.8.11
+openpyxl>=3.1.2
+xlrd>=2.0.1
+pandas>=2.0.0
+python-pptx>=0.6.21
+Pillow>=10.0.0

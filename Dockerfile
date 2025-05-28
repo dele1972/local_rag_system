@@ -3,25 +3,21 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies for unstructured
+# Install system dependencies for unstructured and Office documents
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpoppler-cpp-dev \
     pkg-config \
     python3-dev \
     tesseract-ocr \
+    tesseract-ocr-deu \
+    libtesseract-dev \
+    libreoffice \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# Tesseract OCR mit deutscher Sprache installieren
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-deu \
-    libtesseract-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 
 COPY app ./app
 COPY documents ./documents
