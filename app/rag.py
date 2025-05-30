@@ -4,15 +4,12 @@ from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
 from langchain.chains.question_answering import load_qa_chain
 from app.config import config
+from app.connection_utils import check_ollama_connection_with_retry
 import requests
 
 def check_ollama_connection():
-    """Check if Ollama is accessible"""
-    try:
-        response = requests.get(f"{config.get_ollama_base_url()}/api/tags", timeout=5)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
-        return False
+    """Einfache Ollama-Verbindungsprüfung (Kompatibilität)"""
+    return check_ollama_connection_with_retry(max_retries=3)
 
 def get_prompt_template():
     """Define a prompt template for RAG"""
