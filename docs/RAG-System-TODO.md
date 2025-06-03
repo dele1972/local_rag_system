@@ -6,7 +6,10 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 📊 Priorität 1: Token-Tracking & Analytics
 
-### I001: Token-Ausgabe implementieren
+### I001: MarkDown und HTML Formatierungen aus KI Antworten übernehmen bzw. darstellen
+**Ziel:** Antworten sollen entsprechend ihrer Formatierungsbefehle angezeigt werden
+
+### I002: Token-Ausgabe implementieren
 **Ziel:** Anzeige von Input- und Output-Token für jede Anfrage
 
 **Betroffene Dateien:**
@@ -20,7 +23,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Kosten-Schätzung basierend auf Modell-Parametern
 - Session-basierte Token-Statistiken
 
-### I002: Analytics Dashboard
+### I003: Analytics Dashboard
 **Betroffene Dateien:**
 - `app/ui.py` - Neuer Tab "Analytics"
 - `app/analytics.py` (neu) - Statistik-Funktionen
@@ -34,7 +37,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 🔧 Priorität 2: System-Verbesserungen
 
-### I003: Erweiterte Konfiguration
+### I004: Erweiterte Konfiguration
 **Betroffene Dateien:**
 - `app/config.py` - Erweitern um mehr Konfigurationsoptionen
 - `config.yaml` (neu) - YAML-basierte Konfiguration
@@ -46,7 +49,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Temperature und andere LLM-Parameter
 - Logging-Level Konfiguration
 
-### I004: Verbessertes Error Handling
+### I005: Verbessertes Error Handling
 **Betroffene Dateien:**
 - `app/error_handler.py` (neu) - Zentrale Fehlerbehandlung
 - `app/logger.py` (neu) - Strukturiertes Logging
@@ -60,7 +63,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 📚 Priorität 3: Dokumenten-Pipeline erweitern
 
-### I005: Erweiterte Dokumenten-Verarbeitung
+### I006: Erweiterte Dokumenten-Verarbeitung
 **Betroffene Dateien:**
 - `app/vectorstore.py` - Erweitern der Loader-Funktionen
 - `app/document_processors/` (neuer Ordner)
@@ -75,7 +78,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Bild-Text-Extraktion (OCR) verbessern
 - Metadaten-Extraktion (Autor, Erstellungsdatum, Seitenzahl, etc.)
 
-### I006: Dokumenten-Preprocessing
+### I007: Dokumenten-Preprocessing
 **Betroffene Dateien:**
 - `app/preprocessor.py` (neu) - Text-Vorverarbeitung
 - `app/text_cleaner.py` (neu) - Text-Bereinigung
@@ -88,7 +91,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 🔍 Priorität 4: Such- und Retrieval-Verbesserungen
 
-### I007: Hybride Suche
+### I008: Hybride Suche
 **Betroffene Dateien:**
 - `app/retrieval.py` (neu) - Erweiterte Retrieval-Strategien
 - `app/reranking.py` (neu) - Result-Reranking
@@ -100,7 +103,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Kontextualisierte Suche
 - Multi-Query-Retrieval
 
-### I008: Erweiterte Embedding-Strategien
+### I009: Erweiterte Embedding-Strategien
 **Betroffene Dateien:**
 - `app/embeddings.py` (neu) - Embedding-Management
 - `app/vectorstore.py` - Erweitern um neue Embedding-Optionen
@@ -113,7 +116,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 💬 Priorität 5: Conversational Features
 
-### I009: Chat-Memory
+### I010: Chat-Memory
 **Betroffene Dateien:**
 - `app/memory.py` (neu) - Conversation Memory
 - `app/chat_handler.py` (neu) - Chat-Session Management
@@ -125,7 +128,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Session-Management
 - Chat-History Export
 
-### I010: Multi-Modal Support
+### I011: Multi-Modal Support
 **Betroffene Dateien:**
 - `app/multimodal.py` (neu) - Bild/Text-Integration
 - `requirements.txt` - Neue Dependencies
@@ -137,7 +140,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 🚀 Priorität 6: Performance & Skalierung
 
-### I011: Caching-System
+### I012: Caching-System
 **Betroffene Dateien:**
 - `app/cache.py` (neu) - Caching-Layer
 - `app/rag.py` - Cache-Integration
@@ -147,7 +150,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Embedding-Caching
 - Redis-Integration für verteiltes Caching
 
-### I012: Batch-Processing
+### I013: Batch-Processing
 **Betroffene Dateien:**
 - `app/batch_processor.py` (neu) - Batch-Verarbeitung
 - `app/task_queue.py` (neu) - Async Task-Management
@@ -160,7 +163,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 🛡️ Priorität 7: Security & Compliance
 
-### I013: Sicherheits-Features
+### I014: Sicherheits-Features
 **Betroffene Dateien:**
 - `app/security.py` (neu) - Sicherheits-Funktionen
 - `app/auth.py` (neu) - Authentifizierung
@@ -172,7 +175,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - User-Authentication (OAUTH? Google Auth, IAM, ...)
 - API-Key-Management
 
-### I014: Privacy & Compliance
+### I015: Privacy & Compliance
 **Betroffene Dateien:**
 - `app/privacy.py` (neu) - Datenschutz-Features
 - `app/audit.py` (neu) - Audit-Logging
@@ -185,7 +188,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 🔧 Priorität 8: DevOps & Monitoring
 
-### I015: Monitoring & Observability
+### I016: Monitoring & Observability
 **Betroffene Dateien:**
 - `app/metrics.py` (neu) - Metrics-Collection
 - `app/health_check.py` (neu) - Health-Monitoring
@@ -197,7 +200,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Performance-Monitoring
 - Alert-System
 
-### I016: Deployment & CI/CD
+### I017: Deployment & CI/CD
 **Betroffene Dateien:**
 - `.github/workflows/` (neuer Ordner) - CI/CD-Pipelines
 - `k8s/` (neuer Ordner) - Kubernetes-Manifests
@@ -211,7 +214,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 📱 Priorität 9: UI/UX Verbesserungen
 
-### I017: Enhanced UI
+### I018: Enhanced UI
 **Betroffene Dateien:**
 - `app/ui.py` - UI-Verbesserungen
 - `static/` (neuer Ordner) - Custom CSS/JS
@@ -223,7 +226,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 - Keyboard-Shortcuts
 - Drag & Drop für Dokumente
 
-### I018: API-Endpoints
+### I019: API-Endpoints
 **Betroffene Dateien:**
 - `app/api.py` (neu) - REST-API
 - `app/websocket_handler.py` (neu) - WebSocket-Support
@@ -237,7 +240,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 ## 🎯 Implementierungs-Reihenfolge
 
 ### Phase 1 (Sofort umsetzbar)
-1. **Token-Tracking** - Ihre gewünschte Funktion
+1. **Anzeigeformatierung aus Antworten übernehmen** / **Token-Tracking** - Ihre gewünschte Funktionen
 2. **Erweiterte Konfiguration** - Flexibilität verbessern
 3. **Error Handling** - Stabilität erhöhen
 
