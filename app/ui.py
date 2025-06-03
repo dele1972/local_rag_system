@@ -1,10 +1,15 @@
-# app/ui.py - Verbesserte Version mit robuster Ollama-Verbindung
+# app/ui.py - Verbesserte Version mit robuster Ollama-Verbindung und sicherer Markdown-Darstellung
 
 import os
 import datetime
 import gradio as gr
 import threading
 import time
+import re
+import html
+import markdown
+from markdown.extensions import codehilite, fenced_code, tables, toc
+import bleach
 
 from app.loader import load_documents_from_path
 from app.vectorstore import (
@@ -25,6 +30,118 @@ current_vectorstore = None
 current_model = None
 current_chain_type = "stuff"
 _ollama_status_cache = {'connected': False, 'last_check': 0, 'cache_duration': 10}
+
+# === Sichere Markdown-Verarbeitung ===
+
+# Erlaubte HTML-Tags und Attribute für Bleach
+ALLOWED_TAGS = [
+    'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'table', 'thead', 'tbody',
+    'tr', 'td', 'th', 'div', 'span', 'hr'
+]
+
+ALLOWED_ATTRIBUTES = {
+    'a': ['href', 'title'],
+    'code': ['class'],
+    'pre': ['class'],
+    'div': ['class'],
+    'span': ['class'],
+    'table': ['class'],
+    'th': ['align'],
+    'td': ['align']
+}
+
+def sanitize_and_format_text(text):
+    """
+    Konvertiert Markdown zu HTML und sanitized das Ergebnis für sichere Anzeige.
+    
+    Args:
+        text (str): Der zu formatierende Text (kann Markdown enthalten)
+        
+    Returns:
+        str: Sicherer HTML-Text für die Anzeige
+    """
+    if not text or not isinstance(text, str):
+        return ""
+    
+    try:
+        # 1. Markdown zu HTML konvertieren
+        md = markdown.Markdown(
+            extensions=[
+                'codehilite',
+                'fenced_code', 
+                'tables',
+                'toc',
+                'nl2br'  # Zeilenumbrüche beibehalten
+            ],
+            extension_configs={
+                'codehilite': {
+                    'css_class': 'highlight',
+                    'use_pygments': False  # Vermeidet externe Abhängigkeiten
+                }
+            }
+        )
+        
+        html_content = md.convert(text)
+        
+        # 2. HTML sanitizen (entfernt potentiell schädliche Inhalte)
+        clean_html = bleach.clean(
+            html_content,
+            tags=ALLOWED_TAGS,
+            attributes=ALLOWED_ATTRIBUTES,
+            strip=True  # Entfernt unerlaubte Tags komplett
+        )
+        
+        # 3. Zusätzliche Bereinigung für bessere Darstellung
+        clean_html = clean_html.replace('\n\n', '\n')  # Doppelte Zeilenumbrüche reduzieren
+        
+        return clean_html
+        
+    except Exception as e:
+        # Fallback: Text escapen falls Markdown-Verarbeitung fehlschlägt
+        print(f"Markdown-Verarbeitung fehlgeschlagen: {e}")
+        return html.escape(text).replace('\n', '<br>')
+
+def format_answer_with_sources(answer, sources, model_info):
+    """
+    Formatiert die Antwort mit Quellen und Modellinformationen als HTML.
+    
+    Args:
+        answer (str): Die Hauptantwort
+        sources (list): Liste der Quelldateien
+        model_info (str): Informationen über das verwendete Modell
+        
+    Returns:
+        str: Formatierte HTML-Antwort
+    """
+    # Hauptantwort formatieren
+    formatted_answer = sanitize_and_format_text(answer)
+    
+    # Quellen-Sektion
+    sources_html = ""
+    if sources:
+        unique_sources = list(set(sources))
+        sources_list = []
+        for source in unique_sources:
+            # Nur den Dateinamen anzeigen, nicht den vollständigen Pfad
+            filename = os.path.basename(source)
+            sources_list.append(f"<li><code>{html.escape(filename)}</code></li>")
+        
+        sources_html = f"""
+<hr>
+<h4>📚 Quellen:</h4>
+<ul>
+{''.join(sources_list)}
+</ul>
+"""
+    
+    # Modell-Info
+    model_html = f"""
+<hr>
+<p><small><strong>🤖 Modell:</strong> {html.escape(model_info)}</small></p>
+"""
+    
+    return f"{formatted_answer}{sources_html}{model_html}"
 
 # === Verbesserte Verbindungsprüfung ===
 
@@ -273,7 +390,7 @@ def refresh_vectorstore_list():
 # === Fragen & Antworten ===
 
 def ask_question(question):
-    """Verarbeitet eine Frage über die geladenen Dokumente."""
+    """Verarbeitet eine Frage über die geladenen Dokumente mit formatierter HTML-Ausgabe."""
     global qa_chain, current_model, current_chain_type
 
     if qa_chain is None:
@@ -292,18 +409,17 @@ def ask_question(question):
             if hasattr(doc, 'metadata') and 'source' in doc.metadata:
                 sources.append(doc.metadata['source'])
         
-        # Antwort formatieren
-        source_info = ""
-        if sources:
-            unique_sources = list(set(sources))
-            source_info = "\n\nQuellen:\n" + "\n".join(f"- {s}" for s in unique_sources)
+        # Modellinformationen
+        model_info = f"{current_model}, Chain-Typ: {current_chain_type}"
         
-        model_info = f"\n\nModell: {current_model}, Chain-Typ: {current_chain_type}"
+        # Formatierte Antwort mit HTML erstellen
+        formatted_answer = format_answer_with_sources(answer, sources, model_info)
         
-        return f"{answer}{source_info}{model_info}"
+        return formatted_answer
 
     except Exception as e:
-        return f"⚠️ Fehler bei der Frageverarbeitung: {str(e)}"
+        error_msg = f"⚠️ Fehler bei der Frageverarbeitung: {str(e)}"
+        return html.escape(error_msg)
 
 # === Benutzeroberfläche ===
 
@@ -381,10 +497,11 @@ def create_interface():
                 lines=2
             )
             ask_btn = gr.Button("🔍 Frage stellen", variant="primary")
-            answer = gr.Textbox(
-                label="Antwort", 
-                lines=15,
-                placeholder="Hier erscheint die Antwort..."
+            
+            # HTML-Komponente für formatierte Antworten verwenden
+            answer = gr.HTML(
+                label="Antwort",
+                value="<p><em>Hier erscheint die formatierte Antwort...</em></p>"
             )
 
         # === Event-Handler ===

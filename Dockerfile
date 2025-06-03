@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-deu \
     libtesseract-dev \
     libreoffice \
+    # Zusätzliche Abhängigkeiten für HTML-Sanitization
+    libxml2-dev \
+    libxslt-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

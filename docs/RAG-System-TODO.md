@@ -6,9 +6,6 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 📊 Priorität 1: Token-Tracking & Analytics
 
-### I001: MarkDown und HTML Formatierungen aus KI Antworten übernehmen bzw. darstellen
-**Ziel:** Antworten sollen entsprechend ihrer Formatierungsbefehle angezeigt werden
-
 ### I002: Token-Ausgabe implementieren
 **Ziel:** Anzeige von Input- und Output-Token für jede Anfrage
 
@@ -240,7 +237,7 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 ## 🎯 Implementierungs-Reihenfolge
 
 ### Phase 1 (Sofort umsetzbar)
-1. **Anzeigeformatierung aus Antworten übernehmen** / **Token-Tracking** - Ihre gewünschte Funktionen
+1. ~~**Anzeigeformatierung aus Antworten übernehmen**~~ / **Token-Tracking** - Ihre gewünschte Funktionen
 2. **Erweiterte Konfiguration** - Flexibilität verbessern
 3. **Error Handling** - Stabilität erhöhen
 

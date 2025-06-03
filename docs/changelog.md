@@ -1,5 +1,16 @@
 # Changelog
 
+## Entwickler Version
+
+### I001: MarkDown und HTML Formatierungen aus KI Antworten übernehmen bzw. darstellen
+**Ziel:** Antworten sollen entsprechend ihrer Formatierungsbefehle formatiert angezeigt werden
+
+**Betroffene Dateien:**
+- app/ui.py
+- Dockerfile
+- requirements.txt
+  - [bleach](https://github.com/mozilla/bleach)
+
 ## Version 1.2
 
 - Unterstützung von weiteren Dokumentformaten
