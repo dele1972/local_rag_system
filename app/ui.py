@@ -1,22 +1,64 @@
-# app/ui.py
+# app/ui.py - Verbesserte Version mit robuster Ollama-Verbindung
 
 import os
 import datetime
 import gradio as gr
+import threading
+import time
 
 from app.loader import load_documents_from_path
 from app.vectorstore import (
     build_vectorstore, load_vectorstore, delete_vectorstore,
     list_vectorstores
 )
-from app.rag import build_qa_chain, check_ollama_connection, get_chain_type_description
+from app.rag import build_qa_chain, get_chain_type_description
 from app.config import config
+from app.connection_utils import (
+    check_ollama_connection_with_retry, 
+    wait_for_ollama_ready, 
+    get_ollama_status
+)
 
 # === Globale Variablen ===
 qa_chain = None
 current_vectorstore = None
 current_model = None
 current_chain_type = "stuff"
+_ollama_status_cache = {'connected': False, 'last_check': 0, 'cache_duration': 10}
+
+# === Verbesserte Verbindungsprüfung ===
+
+def get_cached_ollama_status():
+    """
+    Cached Ollama-Status um häufige Netzwerk-Calls zu vermeiden
+    """
+    current_time = time.time()
+    
+    # Cache für 10 Sekunden
+    if (current_time - _ollama_status_cache['last_check']) < _ollama_status_cache['cache_duration']:
+        return _ollama_status_cache['connected']
+    
+    # Status aktualisieren
+    status = get_ollama_status()
+    _ollama_status_cache['connected'] = status['connected']
+    _ollama_status_cache['last_check'] = current_time
+    
+    return status['connected']
+
+def check_ollama_with_user_feedback():
+    """
+    Ollama-Verbindung mit Benutzer-Feedback prüfen
+    """
+    status_info = get_ollama_status()
+    
+    if not status_info['connected']:
+        # Retry-Versuch
+        if check_ollama_connection_with_retry(max_retries=3, delay=1.0):
+            return True, "✅ Verbindung zu Ollama hergestellt"
+        else:
+            return False, f"❌ {status_info['status_message']}\n💡 Tipp: Stelle sicher, dass Ollama läuft und erreichbar ist"
+    
+    return True, status_info['status_message']
 
 # === Hilfsfunktionen ===
 
@@ -39,11 +81,11 @@ def update_vectorstore_dropdown_choices():
     available_vs = get_available_vectorstores()
     
     if not available_vs:
-        return gr.update(choices=[], value=None), "ℹ️ Kein Vektorspeicher geladen. Bitte laden Sie einen Vektorspeicher für die weitere Anwendung."
+        return gr.update(choices=[], value=None), "ℹ️ Kein Vektorspeicher gefunden."
     
     return (
         gr.update(choices=available_vs, value=available_vs[0]), 
-        f"✅ {len(available_vs)} Vektorspeicher gefunden, aber noch keiner geladen."
+        f"✅ {len(available_vs)} Vektorspeicher gefunden."
     )
 
 # === Model Loading ===
@@ -52,8 +94,9 @@ def load_model_only(model, chain_type):
     """Lädt nur das Modell ohne Dokumente oder Vektorspeicher."""
     global current_model, current_chain_type
     
-    if not check_ollama_connection():
-        return f"⚠️ Fehler: Keine Verbindung zu Ollama unter {config.get_ollama_base_url()}"
+    connected, status_msg = check_ollama_with_user_feedback()
+    if not connected:
+        return f"⚠️ {status_msg}"
     
     try:
         current_model = model
@@ -69,15 +112,17 @@ def load_model_only(model, chain_type):
 # === Setup & Laden ===
 
 def setup_qa(model, doc_path, chain_type, vectorstore_name):
-    """Lädt Dokumente und erstellt einen neuen Vektorspeicher."""
+    """Lädt Dokumente und erstellt einen neuen Vektorspeicher mit verbesserter Verbindungsprüfung."""
     global qa_chain, current_vectorstore, current_model, current_chain_type
     current_model, current_chain_type = model, chain_type
 
-    if not check_ollama_connection():
+    # Verbesserte Verbindungsprüfung
+    connected, status_msg = check_ollama_with_user_feedback()
+    if not connected:
         return (
-            f"⚠️ Fehler: Keine Verbindung zu Ollama unter {config.get_ollama_base_url()}",
-            gr.update(),  # Dropdown bleibt unverändert
-            gr.update()   # Status bleibt unverändert
+            f"⚠️ {status_msg}",
+            gr.update(),
+            gr.update()
         )
 
     try:
@@ -86,7 +131,7 @@ def setup_qa(model, doc_path, chain_type, vectorstore_name):
 
         if not docs:
             return (
-                "⚠️ Keine unterstützten Dokumente gefunden (.pdf, .txt, .md)",
+                "⚠️ Keine unterstützten Dokumente gefunden",
                 gr.update(),
                 gr.update()
             )
@@ -97,10 +142,11 @@ def setup_qa(model, doc_path, chain_type, vectorstore_name):
         # Nach erfolgreichem Erstellen: Dropdown aktualisieren
         available_vs = get_available_vectorstores()
         
-        success_msg = f"""✅ Modell '{model}' mit Chain-Typ '{chain_type}' geladen
+        success_msg = f"""✅ Setup erfolgreich abgeschlossen!
+🤖 Modell: {model} (Chain-Typ: {chain_type})
 ℹ️ {get_chain_type_description(chain_type)}
-📚 {len(docs)} Dokumentenabschnitte aus {len(loaded_files)} Dateien verarbeitet.
-💾 Vektorspeicher '{vectorstore_name}' gespeichert unter {vs_path}"""
+📚 {len(docs)} Dokumentenabschnitte aus {len(loaded_files)} Dateien verarbeitet
+💾 Vektorspeicher '{vectorstore_name}' gespeichert"""
 
         return (
             success_msg,
@@ -116,15 +162,16 @@ def setup_qa(model, doc_path, chain_type, vectorstore_name):
         )
 
 def load_existing_vectorstore(model, selection, chain_type):
-    """Lädt einen vorhandenen Vektorspeicher."""
+    """Lädt einen vorhandenen Vektorspeicher mit verbesserter Verbindungsprüfung."""
     global qa_chain, current_vectorstore, current_model, current_chain_type
     current_model, current_chain_type = model, chain_type
 
     if not selection:
         return "⚠️ Bitte wähle einen Vektorspeicher aus"
 
-    if not check_ollama_connection():
-        return f"⚠️ Fehler: Keine Verbindung zu Ollama unter {config.get_ollama_base_url()}"
+    connected, status_msg = check_ollama_with_user_feedback()
+    if not connected:
+        return f"⚠️ {status_msg}"
 
     try:
         vs_base_dir = get_vectorstore_base_path()
@@ -137,12 +184,35 @@ def load_existing_vectorstore(model, selection, chain_type):
         current_vectorstore = load_vectorstore(path, model)
         qa_chain = build_qa_chain(current_vectorstore, model, chain_type)
 
-        return f"""✅ Vektorspeicher '{selection}' geladen
-✅ Modell '{model}' mit Chain-Typ '{chain_type}' initialisiert
+        return f"""✅ Vektorspeicher '{selection}' erfolgreich geladen
+🤖 Modell '{model}' mit Chain-Typ '{chain_type}' initialisiert
 ℹ️ {get_chain_type_description(chain_type)}"""
 
     except Exception as e:
         return f"⚠️ Fehler beim Laden: {str(e)}"
+
+# === System-Status-Check ===
+
+def get_system_status():
+    """Gibt aktuellen System-Status zurück"""
+    status_info = get_ollama_status()
+    
+    ollama_status = status_info['status_message']
+    
+    if current_model and qa_chain:
+        qa_status = f"✅ QA-System bereit (Modell: {current_model})"
+    elif current_model:
+        qa_status = "⚠️ Modell geladen, aber kein Vektorspeicher"
+    else:
+        qa_status = "⭕ Kein Modell geladen"
+    
+    return f"{ollama_status}\n{qa_status}"
+
+def refresh_system_status():
+    """Aktualisiert den System-Status"""
+    # Cache leeren für frischen Status
+    _ollama_status_cache['last_check'] = 0
+    return get_system_status()
 
 # === Vektorspeicher-Verwaltung ===
 
@@ -168,16 +238,15 @@ def delete_selected_vectorstore(selection):
 
     try:
         if delete_vectorstore(path):
-            # Nach erfolgreichem Löschen: Dropdown aktualisieren
             available_vs = get_available_vectorstores()
             
             if available_vs:
                 new_selection = available_vs[0]
                 dropdown_update = gr.update(choices=available_vs, value=new_selection)
-                vector_status = f"✅ Vektorspeicher '{selection}' gelöscht. Neuer Auswahl: '{new_selection}'"
+                vector_status = f"✅ '{selection}' gelöscht. Auswahl: '{new_selection}'"
             else:
                 dropdown_update = gr.update(choices=[], value=None)
-                vector_status = "ℹ️ Alle Vektorspeicher gelöscht. Bitte laden Sie einen Vektorspeicher für die weitere Anwendung."
+                vector_status = "ℹ️ Alle Vektorspeicher gelöscht."
             
             return (
                 f"✅ Vektorspeicher '{selection}' erfolgreich gelöscht",
@@ -208,7 +277,7 @@ def ask_question(question):
     global qa_chain, current_model, current_chain_type
 
     if qa_chain is None:
-        return "⚠️ Bitte zuerst Modell und Dokumente laden."
+        return "⚠️ Bitte zuerst Modell und Vektorspeicher laden."
 
     if not question.strip():
         return "⚠️ Bitte eine Frage eingeben."
@@ -259,7 +328,6 @@ def create_interface():
                         value="stuff"
                     )
                     
-                    # Neuer Button zum Laden nur des Modells
                     load_model_btn = gr.Button("🤖 Modell laden", variant="secondary")
                     
                     gr.Markdown("### Neue Dokumente laden")
@@ -276,14 +344,15 @@ def create_interface():
 
                 with gr.Column(scale=1):
                     gr.Markdown("### System-Status")
-                    ollama_connected = check_ollama_connection()
-                    gr.Markdown(f"**Ollama Status:** {'✅ Verbunden' if ollama_connected else '❌ Nicht verbunden'}")
                     
                     status = gr.Textbox(
                         label="Status-Meldungen", 
                         lines=6,
-                        value="Bereit für Konfiguration..." if ollama_connected else "⚠️ Ollama-Verbindung prüfen!"
+                        value="Initialisiere System..."
                     )
+                    
+                    # Button zum manuellen Status-Refresh
+                    refresh_status_btn = gr.Button("🔄 Status aktualisieren", size="sm")
                     
                     gr.Markdown("### Vektorspeicher-Verwaltung")
                     vectorstore_list = gr.Dropdown(
@@ -296,7 +365,7 @@ def create_interface():
                     vector_status = gr.Textbox(
                         label="Vektorspeicher-Status", 
                         interactive=False,
-                        value="Initialisiere..."
+                        value="Lade Vektorspeicher-Liste..."
                     )
                     
                     with gr.Row():
@@ -320,7 +389,14 @@ def create_interface():
 
         # === Event-Handler ===
         
-        # Nur Modell laden (ohne Dokumente)
+        # Status aktualisieren
+        refresh_status_btn.click(
+            fn=refresh_system_status,
+            inputs=[],
+            outputs=[status]
+        )
+        
+        # Modell laden
         load_model_btn.click(
             fn=load_model_only,
             inputs=[model, chain_type],
@@ -333,7 +409,7 @@ def create_interface():
             inputs=[model, doc_path, chain_type, vectorstore_name],
             outputs=[status, vectorstore_list, vector_status]
         ).then(
-            fn=lambda: create_vectorstore_name(),  # Neuen Namen generieren
+            fn=lambda: create_vectorstore_name(),
             inputs=[],
             outputs=[vectorstore_name]
         )
@@ -372,16 +448,20 @@ def create_interface():
             outputs=[answer]
         )
 
-        # Beim Laden der Seite: Vektorspeicher-Liste initialisieren
+        # Beim Laden der Seite: Initialisierung mit Verzögerung
         demo.load(
-            fn=update_vectorstore_dropdown_choices,
+            fn=lambda: (refresh_system_status(), *update_vectorstore_dropdown_choices()),
             inputs=[],
-            outputs=[vectorstore_list, vector_status]
+            outputs=[status, vectorstore_list, vector_status]
         )
 
     return demo
 
 def start_ui():
-    """Startet die Benutzeroberfläche."""
+    """Startet die Benutzeroberfläche mit Ollama-Warteschleife."""
+    # Optional: Warte auf Ollama beim Start
+    if not wait_for_ollama_ready(max_wait_time=10):
+        print("⚠️ Warnung: Ollama scheint nicht bereit zu sein, starte UI trotzdem...")
+    
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=7860, share=False)
