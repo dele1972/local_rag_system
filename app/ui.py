@@ -1,4 +1,4 @@
-# app/ui.py - Verbesserte Version mit robuster Ollama-Verbindung und sicherer Markdown-Darstellung
+# app/ui.py - Erweiterte Version mit Token-Tracking und robuster Ollama-Verbindung
 
 import os
 import datetime
@@ -23,6 +23,7 @@ from app.connection_utils import (
     wait_for_ollama_ready, 
     get_ollama_status
 )
+from app.token_tracker import token_tracker
 
 # === Globale Variablen ===
 qa_chain = None
@@ -102,20 +103,24 @@ def sanitize_and_format_text(text):
         print(f"Markdown-Verarbeitung fehlgeschlagen: {e}")
         return html.escape(text).replace('\n', '<br>')
 
-def format_answer_with_sources(answer, sources, model_info):
+def format_answer_with_sources_and_tokens(answer, sources, model_info, token_info):
     """
-    Formatiert die Antwort mit Quellen und Modellinformationen als HTML.
+    Formatiert die Antwort mit Quellen, Modellinformationen und Token-Details als HTML.
     
     Args:
         answer (str): Die Hauptantwort
         sources (list): Liste der Quelldateien
         model_info (str): Informationen über das verwendete Modell
+        token_info (str): Token-Verbrauchsinformationen
         
     Returns:
         str: Formatierte HTML-Antwort
     """
     # Hauptantwort formatieren
     formatted_answer = sanitize_and_format_text(answer)
+    
+    # Token-Informationen formatieren (Markdown zu HTML)
+    formatted_token_info = sanitize_and_format_text(token_info)
     
     # Quellen-Sektion
     sources_html = ""
@@ -135,13 +140,21 @@ def format_answer_with_sources(answer, sources, model_info):
 </ul>
 """
     
+    # Token-Sektion
+    token_html = f"""
+<hr>
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007acc;">
+{formatted_token_info}
+</div>
+"""
+    
     # Modell-Info
     model_html = f"""
 <hr>
 <p><small><strong>🤖 Modell:</strong> {html.escape(model_info)}</small></p>
 """
     
-    return f"{formatted_answer}{sources_html}{model_html}"
+    return f"{formatted_answer}{sources_html}{token_html}{model_html}"
 
 # === Verbesserte Verbindungsprüfung ===
 
@@ -176,6 +189,71 @@ def check_ollama_with_user_feedback():
             return False, f"❌ {status_info['status_message']}\n💡 Tipp: Stelle sicher, dass Ollama läuft und erreichbar ist"
     
     return True, status_info['status_message']
+
+# === Token-Statistik-Funktionen ===
+
+def get_session_stats():
+    """Gibt Session-Statistiken zurück"""
+    stats = token_tracker.get_session_summary()
+    
+    return f"""📊 **Session-Statistiken:**
+• Anfragen: {stats['total_requests']}
+• Gesamt-Token: {stats['total_tokens']:,}
+  - Input: {stats['total_input_tokens']:,}
+  - Output: {stats['total_output_tokens']:,}
+• Ø Token/Anfrage: {stats['average_tokens_per_request']}
+• Ø Verarbeitungszeit: {stats['average_processing_time']}s
+• Session-Dauer: {stats['session_duration']}
+• Geschätzte Gesamtkosten: ${stats['estimated_total_cost']}"""
+
+def get_recent_requests_table():
+    """Erstellt eine HTML-Tabelle mit den letzten Anfragen"""
+    recent = token_tracker.get_recent_requests(10)
+    
+    if not recent:
+        return "<p><em>Noch keine Anfragen in dieser Session.</em></p>"
+    
+    table_rows = []
+    for req in recent:
+        table_rows.append(f"""
+        <tr>
+            <td>{req['timestamp']}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{html.escape(req['question'])}">{html.escape(req['question'][:50])}...</td>
+            <td>{req['input_tokens']:,}</td>
+            <td>{req['output_tokens']:,}</td>
+            <td><strong>{req['total_tokens']:,}</strong></td>
+            <td>{req['processing_time']}s</td>
+            <td>${req['cost_estimate']}</td>
+        </tr>
+        """)
+    
+    return f"""
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <thead>
+            <tr style="background-color: #f8f9fa;">
+                <th style="border: 1px solid #ddd; padding: 8px;">Zeit</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Frage</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Input</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Output</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Gesamt</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Zeit</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Kosten</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(table_rows)}
+        </tbody>
+    </table>
+    """
+
+def reset_token_stats():
+    """Setzt die Token-Statistiken zurück"""
+    token_tracker.reset_session()
+    return (
+        get_session_stats(),
+        get_recent_requests_table(),
+        "🔄 Token-Statistiken wurden zurückgesetzt."
+    )
 
 # === Hilfsfunktionen ===
 
@@ -390,14 +468,22 @@ def refresh_vectorstore_list():
 # === Fragen & Antworten ===
 
 def ask_question(question):
-    """Verarbeitet eine Frage über die geladenen Dokumente mit formatierter HTML-Ausgabe."""
+    """Verarbeitet eine Frage über die geladenen Dokumente mit formatierter HTML-Ausgabe und Token-Tracking."""
     global qa_chain, current_model, current_chain_type
 
     if qa_chain is None:
-        return "⚠️ Bitte zuerst Modell und Vektorspeicher laden."
+        return (
+            "⚠️ Bitte zuerst Modell und Vektorspeicher laden.",
+            get_session_stats(),
+            get_recent_requests_table()
+        )
 
     if not question.strip():
-        return "⚠️ Bitte eine Frage eingeben."
+        return (
+            "⚠️ Bitte eine Frage eingeben.",
+            get_session_stats(),
+            get_recent_requests_table()
+        )
 
     try:
         result = qa_chain.invoke({"query": question})
@@ -412,14 +498,27 @@ def ask_question(question):
         # Modellinformationen
         model_info = f"{current_model}, Chain-Typ: {current_chain_type}"
         
-        # Formatierte Antwort mit HTML erstellen
-        formatted_answer = format_answer_with_sources(answer, sources, model_info)
+        # Token-Informationen aus dem Ergebnis
+        token_info = result.get('token_info', 'Token-Informationen nicht verfügbar')
         
-        return formatted_answer
+        # Formatierte Antwort mit HTML erstellen
+        formatted_answer = format_answer_with_sources_and_tokens(
+            answer, sources, model_info, token_info
+        )
+        
+        # Token-Statistiken aktualisieren
+        session_stats = get_session_stats()
+        recent_table = get_recent_requests_table()
+        
+        return formatted_answer, session_stats, recent_table
 
     except Exception as e:
         error_msg = f"⚠️ Fehler bei der Frageverarbeitung: {str(e)}"
-        return html.escape(error_msg)
+        return (
+            html.escape(error_msg),
+            get_session_stats(),
+            get_recent_requests_table()
+        )
 
 # === Benutzeroberfläche ===
 
@@ -490,19 +589,55 @@ def create_interface():
                         delete_vs_btn = gr.Button("🗑️ Löschen", variant="stop")
 
         with gr.Tab("Fragen und Antworten"):
-            gr.Markdown("### Dokumente befragen")
-            question = gr.Textbox(
-                label="Frage an die Dokumente", 
-                placeholder="Was ist der Hauptinhalt der Dokumente?",
-                lines=2
-            )
-            ask_btn = gr.Button("🔍 Frage stellen", variant="primary")
+            with gr.Row():
+                with gr.Column(scale=2):
+                    gr.Markdown("### Dokumente befragen")
+                    question = gr.Textbox(
+                        label="Frage an die Dokumente", 
+                        placeholder="Was ist der Hauptinhalt der Dokumente?",
+                        lines=2
+                    )
+                    ask_btn = gr.Button("🔍 Frage stellen", variant="primary")
+                    
+                    # HTML-Komponente für formatierte Antworten verwenden
+                    answer = gr.HTML(
+                        label="Antwort",
+                        value="<p><em>Hier erscheint die formatierte Antwort mit Token-Informationen...</em></p>"
+                    )
+                
+                with gr.Column(scale=1):
+                    gr.Markdown("### 📊 Token-Statistiken")
+                    
+                    session_stats = gr.HTML(
+                        label="Session-Übersicht",
+                        value="<p><em>Noch keine Statistiken verfügbar.</em></p>"
+                    )
+                    
+                    reset_stats_btn = gr.Button("🔄 Statistiken zurücksetzen", size="sm")
+                    
+                    gr.Markdown("### 📈 Letzte Anfragen")
+                    recent_requests = gr.HTML(
+                        label="Anfrage-Historie",
+                        value="<p><em>Noch keine Anfragen.</em></p>"
+                    )
+
+        with gr.Tab("Token-Analytics"):
+            gr.Markdown("### 📊 Detaillierte Token-Analyse")
             
-            # HTML-Komponente für formatierte Antworten verwenden
-            answer = gr.HTML(
-                label="Antwort",
-                value="<p><em>Hier erscheint die formatierte Antwort...</em></p>"
-            )
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("#### Session-Übersicht")
+                    detailed_stats = gr.HTML(
+                        value="<p><em>Starte eine Unterhaltung, um Statistiken zu sehen.</em></p>"
+                    )
+                
+                with gr.Column():
+                    gr.Markdown("#### Anfrage-Historie")
+                    detailed_history = gr.HTML(
+                        value="<p><em>Anfrage-Historie wird hier angezeigt.</em></p>"
+                    )
+            
+            refresh_analytics_btn = gr.Button("🔄 Analytics aktualisieren")
 
         # === Event-Handler ===
         
@@ -556,20 +691,39 @@ def create_interface():
         ask_btn.click(
             fn=ask_question,
             inputs=[question],
-            outputs=[answer]
+            outputs=[answer, session_stats, recent_requests]
         )
         
         question.submit(
             fn=ask_question,
             inputs=[question],
-            outputs=[answer]
+            outputs=[answer, session_stats, recent_requests]
+        )
+        
+        # Token-Statistiken zurücksetzen
+        reset_stats_btn.click(
+            fn=reset_token_stats,
+            inputs=[],
+            outputs=[session_stats, recent_requests, status]
+        )
+        
+        # Analytics aktualisieren
+        refresh_analytics_btn.click(
+            fn=lambda: (get_session_stats(), get_recent_requests_table()),
+            inputs=[],
+            outputs=[detailed_stats, detailed_history]
         )
 
         # Beim Laden der Seite: Initialisierung mit Verzögerung
         demo.load(
-            fn=lambda: (refresh_system_status(), *update_vectorstore_dropdown_choices()),
+            fn=lambda: (
+                refresh_system_status(), 
+                *update_vectorstore_dropdown_choices(),
+                get_session_stats(),
+                get_recent_requests_table()
+            ),
             inputs=[],
-            outputs=[status, vectorstore_list, vector_status]
+            outputs=[status, vectorstore_list, vector_status, session_stats, recent_requests]
         )
 
     return demo

@@ -1,7 +1,7 @@
 # requirements.txt
 langchain>=0.1.0
-langchain-community>=0.0.13
-langchain-ollama>=0.0.1
+langchain-community>=0.0.20
+langchain-ollama>=0.1.0
 langchain-chroma>=0.0.3
 chromadb>=0.4.22
 requests>=2.31.0
@@ -17,8 +17,19 @@ sentence-transformers>=2.2.2
 python-docx>=0.8.11
 openpyxl>=3.1.2
 xlrd>=2.0.1
-pandas>=2.0.0
+pandas>=2.0.0               # Für Datenanalyse der Token-Statistiken
 python-pptx>=0.6.21
 Pillow>=10.0.0
 # Sichere HTML-Sanitization für Markdown-Darstellung
 bleach>=6.0.0
+
+# Bestehende Dependencies
+#PyPDF2>=3.0.0
+# Neue Dependencies für Token-Tracking
+tiktoken>=0.5.0           # Für präzise Token-Zählung (OpenAI-kompatibel)
+matplotlib>=3.7.0         # Für Token-Visualisierungen (optional)
+plotly>=5.17.0           # Für interaktive Charts (optional)
+# Development Dependencies (optional)
+pytest>=7.0.0            # Für Tests
+black>=23.0.0            # Code-Formatierung
+flake8>=6.0.0            # Linting

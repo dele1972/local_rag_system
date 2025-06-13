@@ -296,6 +296,53 @@ def load_documents_from_file(file_path, chunk_size=1000, chunk_overlap=200):
         logger.error(f"Fehler beim Laden der Datei {file_path}: {e}")
         return []
 
+def load_documents(documents_path, chunk_size=1000, chunk_overlap=200):
+    """
+    Lädt alle Dokumente aus einem Pfad (Datei oder Verzeichnis)
+    
+    Args:
+        documents_path: Pfad zu einer Datei oder einem Verzeichnis
+        chunk_size: Größe der Text-Chunks  
+        chunk_overlap: Überlappung zwischen Chunks
+    
+    Returns:
+        Liste von LangChain-Dokumenten
+    """
+    documents = []
+    supported_extensions = get_supported_file_types()
+    
+    if os.path.isfile(documents_path):
+        # Einzelne Datei
+        logger.info(f"Lade Datei: {documents_path}")
+        documents.extend(load_documents_from_file(documents_path, chunk_size, chunk_overlap))
+        
+    elif os.path.isdir(documents_path):
+        # Verzeichnis durchsuchen
+        logger.info(f"Durchsuche Verzeichnis: {documents_path}")
+        file_count = 0
+        
+        for root, dirs, files in os.walk(documents_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_extension = os.path.splitext(file)[1].lower()
+                
+                if file_extension in supported_extensions:
+                    logger.info(f"Lade Datei: {file_path}")
+                    file_documents = load_documents_from_file(file_path, chunk_size, chunk_overlap)
+                    documents.extend(file_documents)
+                    file_count += 1
+                else:
+                    logger.debug(f"Überspringe nicht unterstützte Datei: {file_path}")
+        
+        logger.info(f"Erfolgreich {file_count} Dateien geladen, insgesamt {len(documents)} Dokument-Chunks")
+    else:
+        raise ValueError(f"Pfad nicht gefunden: {documents_path}")
+    
+    if not documents:
+        logger.warning("Keine Dokumente gefunden oder alle Dateien waren leer")
+    
+    return documents
+
 def build_vectorstore(documents, model_name, persist_directory=None):
     """Erstelle einen Vektorspeicher aus LangChain-Dokumenten"""
     if not documents:
@@ -360,3 +407,51 @@ def get_supported_file_types():
         ".xlsx", ".xls",         # Excel
         ".pptx", ".ppt"          # PowerPoint
     ]
+
+def get_vectorstore(documents, model_name="nomic-embed-text", persist_directory=None, chunk_size=1000, chunk_overlap=200):
+    """
+    Erstellt oder lädt einen Vektorspeicher
+    
+    Args:
+        documents: Liste von LangChain-Dokumenten oder Pfad zu Dokumenten
+        model_name: Name des Embedding-Modells
+        persist_directory: Verzeichnis zum Speichern des Vektorspeichers
+        chunk_size: Größe der Text-Chunks
+        chunk_overlap: Überlappung zwischen Chunks
+    
+    Returns:
+        Chroma-Vektorspeicher
+    """
+    
+    # Falls documents ein String ist (Pfad), lade Dokumente aus dem Pfad
+    if isinstance(documents, str):
+        documents_path = documents
+        documents = []
+        
+        # Lade alle unterstützten Dateien aus dem Pfad
+        supported_extensions = get_supported_file_types()
+        
+        if os.path.isfile(documents_path):
+            # Einzelne Datei
+            documents.extend(load_documents_from_file(documents_path, chunk_size, chunk_overlap))
+        elif os.path.isdir(documents_path):
+            # Verzeichnis durchsuchen
+            for root, dirs, files in os.walk(documents_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    file_extension = os.path.splitext(file)[1].lower()
+                    
+                    if file_extension in supported_extensions:
+                        logger.info(f"Lade Datei: {file_path}")
+                        file_documents = load_documents_from_file(file_path, chunk_size, chunk_overlap)
+                        documents.extend(file_documents)
+        else:
+            raise ValueError(f"Pfad nicht gefunden: {documents_path}")
+    
+    if not documents:
+        raise ValueError("Keine Dokumente zum Erstellen des Vektorspeichers gefunden")
+    
+    logger.info(f"Erstelle Vektorspeicher mit {len(documents)} Dokumenten")
+    
+    # Vektorspeicher erstellen
+    return build_vectorstore(documents, model_name, persist_directory)

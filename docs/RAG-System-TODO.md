@@ -6,6 +6,18 @@ Ihr RAG-System ist bereits sehr solide aufgebaut mit Docker-Container, Ollama-In
 
 ## 📊 Priorität 1: Token-Tracking & Analytics
 
+### I020: Erstellen, Auswählen, Löschen und benutzen von vorgefertigten Kontexten
+**Ziel:** Es sollen Kontexte (mit Überschrift) verwendet werden können um bei einer Frage für gezieltere Antworten optional das Setting zu beschreiben.
+- Ich frage aus der Sicht des Infor Experten technischer,
+- Ich benötige zusätztliche Buchungsinformationen bei einer Frage aus Sicht des Anwenders,
+- Ich benötige mehr rechtlichen Background bei Fragen als Angestellter, ...
+
+**Betroffene Dateien:**
+- ?
+
+**Implementierung:**
+- Token-Counter für Ollama-Modelle integrieren
+
 ### I002: Token-Ausgabe implementieren
 **Ziel:** Anzeige von Input- und Output-Token für jede Anfrage
 

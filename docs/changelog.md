@@ -2,6 +2,8 @@
 
 ## Entwickler Version
 
+### Optimierungsprozess - Neue Debugging Funktionen (rag.py, main.py)
+
 ### I001: MarkDown und HTML Formatierungen aus KI Antworten übernehmen bzw. darstellen
 **Ziel:** Antworten sollen entsprechend ihrer Formatierungsbefehle formatiert angezeigt werden
 
@@ -10,6 +12,22 @@
 - Dockerfile
 - requirements.txt
   - [bleach](https://github.com/mozilla/bleach)
+
+**Config.py Verbesserungen**:
+
+✅ Token-Limits konfigurierbar: Alle Modelle mit spezifischen Token-Limits
+✅ Erweiterte Modell-Metadaten: Display-Namen, Beschreibungen, Chain-Empfehlungen
+✅ Intelligente Berechnungen: Context-Limits mit Sicherheitspuffern
+✅ Verbessertes Logging: Strukturiertes Logging mit konfigurierbaren Leveln
+✅ Utility-Funktionen: Modell-Gruppierung, optimale Retrieval-Einstellungen
+
+**RAG.py Anpassungen**:
+
+✅ Config-Integration: Verwendet Token-Limits aus der Config
+✅ Verbessertes Logging: Nutzt konfigurierten Logger
+✅ Intelligente Empfehlungen: Chain-Type-Empfehlungen basierend auf Modell
+
+---
 
 ## Version 1.2
 
