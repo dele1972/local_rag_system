@@ -244,6 +244,49 @@ python main.py --debug-interactive
 
 Die erweiterte `main.py` nutzt alle bereits implementierten Debugging-Klassen aus der `rag.py` optimal aus und gibt die notwendigen Einblicke, um das Problem mit großen deutschen Dokumenten zu lösen.
 
+## Scripts
+
+### Automatisierte Dokumentation der app Python Dateien ´/scripts/docgen.py`
+
+#### 🎯 Was das Script extrahiert
+
+##### Struktur der generierten Dokumentation
+
+- 📋 Übersicht - Dateiname, Zeilenzahl, Analysezeitpunkt
+- 📦 Imports - Kategorisiert in Standard Library, Third Party, Local/App
+- 🔧 Konstanten & Variablen - Top-Level Definitionen
+- ⚙️ Funktionen - Signatur, Parameter, Rückgabewerte, Beschreibung
+- 🏗️ Klassen - Vererbung, Methoden, Properties
+
+##### Intelligente Extraktion
+
+- Funktionssignaturen mit Typ-Annotations und Defaults
+- Kurze Beschreibungen aus Docstrings oder Code-Analyse
+- Kategorisierung (öffentlich/privat, Properties, Decorators)
+- Automatische Größenreduktion (typisch 60-80% kleiner)
+
+#### 🚀 Verwendung
+
+```powershell
+docker exec -it local_rag_system-rag-app-1 python3 ./scripts/docgen.py
+```
+
+```bash
+# Standard: ./app -> ./descr
+python doc_generator.py
+```
+
+```bash
+# Andere Verzeichnisse
+python doc_generator.py --source ./my_app --output ./docs
+```
+
+```bash
+# Nur bestimmte Dateien
+python doc_generator.py --pattern "*_main.py"
+
+```
+
 ## Changelog
 
 [changelog](docs/changelog.md)
