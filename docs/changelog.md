@@ -2,7 +2,54 @@
 
 ## Entwickler Version
 
-### Optimierungsprozess - Neue Debugging Funktionen (rag.py, main.py)
+### RAG Test Framework Suite - Vollständige Test-Komponente
+
+#### 📦 Komponenten hinzugefügt:
+- **test_rag.py** - Core Test Framework
+- **test_utils.py** - Analysis & Visualization Utilities  
+- **run_rag_tests.py** - CLI Interface & Orchestration
+
+#### ✨ Gesamt-Features:
+- **Systematische RAG-Evaluation:** Multi-Parameter Test-Matrix, Automatische Kombination von Modellen, Chunk-Größen und Dokumenten
+- **Deutsche Dokument-Optimierung:** Speziell angepasste Parameter für deutsche Texte
+- **Große Datei-Support:** Speicher-optimiert für 6.5MB+ Dokumente
+- **Performance-Monitoring:** Detaillierte Messung von Response-Zeit und Ressourcenverbrauch, CPU/RAM-Überwachung während Tests
+- **Visualisierung:** Interactive Dashboards & HTML-Reports
+- **Parallelisierung:** Batch-Test-Ausführung für bessere Performance
+- **Flexible Test-Modi:** Analyse, Quick-Test, Vollständiger Benchmark
+- **JSON-Export:** Strukturierte Ergebnisse für weitere Analyse
+
+#### 🎯 Verwendungszwecke:
+- **Performance-Baseline:** Systematische RAG-System-Bewertung und RAG-Performance-Evaluation
+- **Parameter-Optimierung:** Beste Chunk-Größe/Modell-Kombination finden, Optimierung für große deutsche Dokumente
+- **Regression-Testing:** Continuous Integration für RAG-Änderungen
+- **Capacity-Planning:** Resource-Verbrauch für große Dokumente, Performance-Baseline-Erstellung
+- **Model-Selection:** Datenbasierte Modell-Auswahl
+
+#### 🏗️ Architektur-Highlights:
+- **RAGTestFramework:** Haupt-Engine mit 4 Kern-Methoden
+- **3-Schichten-Design:** Separation of Concerns
+- **Datenklassen-basiert:** Strukturierte Test-Konfiguration
+- **Robuste Fehlerbehandlung:** Graceful Degradation bei Test-Fehlern
+- **Modular aufgebaut:** Einzelne Komponenten verwendbar
+- **CLI + Programmatic API:** Flexible Nutzung
+- **TestConfiguration:** Datenstruktur für Test-Parameter
+- **TestResult:** Strukturierte Ergebnis-Sammlung  
+
+#### 🔧 Deutsche RAG-Optimierungen:
+- **Chunk-Größen:** 500-2000 Token (deutsche Satzlängen)
+- **Overlaps:** 50-200 Token (deutsche Grammatik-Strukturen)  
+- **Encoding:** Robuste UTF-8/Umlaut-Behandlung
+- **Model-Support:** Alle 4 Hauptmodelle integriert
+
+### Automatisierte Dokumentation der Python Scripte (`/scripts/docgen.py`)
+- Das Script erstellt automatisch kompakte Markdown-Dokumentation aus den Python-Dateien.
+
+### Optimierungsprozess - Neue Debugging Funktionen (`rag.py`, `main.py`)
+- Erweiterte Token-Logging-Funktion
+- Document-Retrieval-Debugging
+- Performance-Metriken sammeln
+- Chunk-Analyse-Tools
 
 ### I001: MarkDown und HTML Formatierungen aus KI Antworten übernehmen bzw. darstellen
 **Ziel:** Antworten sollen entsprechend ihrer Formatierungsbefehle formatiert angezeigt werden

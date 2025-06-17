@@ -118,6 +118,154 @@ python main.py --analyze-docs --path ./docs
 python main.py --chain-recommendation --model phi4-mini-reasoning:3.8b
 ```
 
+### RAG Test Suite
+- Komponenten: test_rag.py + test_utils.py + run_rag_tests.py
+- Zweck: Vollständiges Test-Framework für RAG-System-Performance-Evaluation
+- Optimiert für: Deutsche Dokumente, große Dateien (6.5MB+), Ollama-Integration
+
+#### Testdurchführung
+
+##### 1. Erst analysieren (6.5MB Datei)
+
+```bash
+python run_rag_tests.py --analyze documents/large_german_doc.pdf
+```
+
+```powershell
+docker exec -it local_rag_system-rag-app-1 python3 ./app/run_rag_tests.py --analyze documents/large_german_doc.pdf
+```
+
+##### 2. Quick-Test für erste Einschätzung
+
+```bash
+python run_rag_tests.py --quick-test documents/large_german_doc.pdf
+```
+
+```powershell
+docker exec -it local_rag_system-rag-app-1 python3 ./app/run_rag_tests.py --quick-test documents/large_german_doc.pdf
+```
+
+# 3. Vollständiger Benchmark
+
+```bash
+python run_rag_tests.py --benchmark --documents documents/ --output benchmark_results.json
+```
+
+```powershell
+docker exec -it local_rag_system-rag-app-1 python3 ./app/run_rag_tests.py --benchmark --documents documents/ --output benchmark_results.json
+```
+
+#### 🏗️ Gesamt-Architektur
+
+##### 3-Schichten-Design
+
+1. `test_rag.py` - Core Test Engine & Framework
+2. `test_utils.py` - Utilities, Monitoring & Visualisierung
+3. `run_rag_tests.py` - CLI Interface & Orchestrierung
+
+##### Datenfluss
+
+```
+run_rag_tests.py → test_rag.py → test_utils.py
+      ↓              ↓              ↓
+  CLI/Setup    Test-Execution   Analysis/Viz
+```
+
+#### 📋 Detaillierte Komponenten-Analyse
+##### 1. `test_rag.py` - Core Test Framework
+- 🎯 Hauptzweck:
+    - Systematische RAG-Performance-Tests mit konfigurierbaren Parametern
+- 🏗️ Kern-Klassen:
+    - `TestConfiguration` - Test-Parameter-Definition
+    - `TestResult` - Strukturierte Ergebnis-Sammlung
+    - `RAGTestFramework` - Haupt-Test-Engine
+- ⚙️ Schlüssel-Methoden:
+    - `create_test_configurations()` - Test-Matrix-Generierung
+    - `run_single_test()` - Einzeltest-Durchführung
+    - `run_test_suite()` - Vollständige Test-Suite
+    - `run_quick_comparison()` - Schneller Modell-Vergleich
+
+##### 2. `test_utils.py` - Utilities & Analysis
+- 🎯 Hauptzweck:
+    - Erweiterte Analyse, Monitoring und Visualisierung der Test-Ergebnisse
+- 🏗️ Kern-Klassen:
+    - `DocumentMetrics` - Dokument-Analyse-Daten
+    - `DocumentAnalyzer` - Vor-Test-Dokument-Bewertung
+    - `PerformanceMonitor` - System-Resource-Überwachung
+    - `TestResultVisualizer` - Chart/Dashboard-Erstellung
+    - `BatchTestRunner` - Parallelisierte Test-Ausführung
+    - `ReportGenerator` - HTML-Report-Generierung
+- ⚙️ Utility-Funktionen:
+    - `quick_document_analysis()` - Schnelle Dokument-Bewertung
+    - `estimate_test_duration()` - Test-Dauer-Schätzung
+
+##### 3. `run_rag_tests.py` - CLI & Orchestrierung (repariert)
+- 🎯 Hauptzweck:
+    - Benutzerfreundliche CLI-Schnittstelle und Test-Orchestrierung
+- 🔧 Test-Modi:
+    - `--analyze` - Dokument-Vorab-Analyse
+    - `--quick-test` - Einzeldokument-Schnelltest
+    - `--benchmark` - Vollständiger Performance-Benchmark
+- ⚙️ Haupt-Funktionen:
+    - `setup_test_environment()` - Umgebungs-Vorbereitung
+    - `run_document_analysis()` - Dokument-Analyse-Pipeline
+    - `run_quick_test()` - Quick-Test-Workflow
+    - `run_full_benchmark()` - Vollständiger Benchmark-Workflow
+
+#### 🎯 Feature-Matrix der Gesamt-Komponente
+##### 📊 Test-Capabilities:
+
+- Systematische Parameter-Variation: Modelle × Chunk-Größen × Dokumente
+- Deutsche Text-Optimierung: Angepasste Chunk-Größen (500-2000), Overlaps (50-200)
+- Große Datei-Support: Memory-optimiert für 6.5MB+ Dokumente
+- Multi-Model-Support: Alle 4 Hauptmodelle (llama3.2, phi4-mini, mistral, deepseek-r1)
+
+##### 🔍 Analyse-Features:
+
+- Dokument-Metriken: Größe, Token-Schätzung, Sprach-Erkennung
+- Performance-Monitoring: CPU/RAM-Überwachung während Tests
+- Qualitäts-Assessment: Response-Zeit, Antwort-Relevanz
+- Batch-Processing: Parallelisierte Test-Ausführung
+
+##### 📈 Visualisierung & Reports:
+
+- Interactive Dashboards: Performance-Übersicht mit Charts
+- Model-Comparison-Charts: Detaillierte Modell-Vergleiche
+- HTML-Reports: Vollständige Test-Dokumentation
+- JSON-Export: Strukturierte Daten für weitere Analyse
+
+##### 🛠️ CLI-Interface:
+
+- 3 Test-Modi: Analyse, Quick-Test, Vollständiger Benchmark
+- Flexible Parameter: Modell-/Chunk-Auswahl via CLI
+- Progress-Tracking: Echtzeit-Status-Updates
+- Robust Error-Handling: Graceful Degradation bei Fehlern
+
+
+#### 📦 Integration & Dependencies
+
+RAG-System-Integration:
+```python
+# Abhängigkeiten innerhalb des RAG-Systems
+from app.config import config                    # Modell-Konfiguration
+from app.rag import build_qa_chain              # Core RAG-Funktionalität  
+from app.vectorstore import build_vectorstore   # Dokument-Processing
+from app.connection_utils import check_ollama_connection  # Ollama-Integration
+```
+
+External Dependencies:
+```python
+# Visualisierung & Analyse
+import matplotlib.pyplot as plt, seaborn as sns
+import pandas as pd, numpy as np
+
+# Performance-Monitoring  
+import psutil, time
+
+# Parallelisierung
+from concurrent.futures import ThreadPoolExecutor
+```
+
 ## Sonstiges
 
 ### Test, ob Ollama im Host erreichbar ist

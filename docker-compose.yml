@@ -4,15 +4,21 @@
 
 services:
   rag-app:
-    build: .
+    build:
+        context: .
+        dockerfile: Dockerfile
     ports:
       - "7860:7860"
     volumes:
       - .:/app
       - ./documents:/documents
+      - ./descr:/app/descr         # NEU: bidirektionales Verzeichnis für Beschreibungen
+      - ./scripts:/app/scripts     # NEU: bidirektionales Verzeichnis für deine Helfer-Skripte
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       - PYTHONUNBUFFERED=1
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true

@@ -33,3 +33,5 @@ plotly>=5.17.0           # Für interaktive Charts (optional)
 pytest>=7.0.0            # Für Tests
 black>=23.0.0            # Code-Formatierung
 flake8>=6.0.0            # Linting
+
+seaborn>=0.12.2            # Für erweiterte Visualisierungen
