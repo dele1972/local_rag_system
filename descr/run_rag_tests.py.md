@@ -3,8 +3,8 @@
 ## 📋 Übersicht
 
 - **Datei:** `run_rag_tests.py`
-- **Zeilen:** 528
-- **Analysiert:** 2025-06-17T14:46:22
+- **Zeilen:** 564
+- **Analysiert:** 2025-06-23T13:19:59
 
 ### Beschreibung
 
@@ -34,6 +34,7 @@ Verwendung:
 ### Third Party
 - `import logging`
 - `import time`
+- `import traceback`
 
 ### Local/App
 - `from app.config import config`

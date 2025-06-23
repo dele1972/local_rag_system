@@ -4,7 +4,7 @@
 
 - **Datei:** `ui.py`
 - **Zeilen:** 738
-- **Analysiert:** 2025-06-17T14:46:23
+- **Analysiert:** 2025-06-23T13:19:59
 
 ## 📦 Imports
 

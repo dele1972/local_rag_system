@@ -3,8 +3,8 @@
 ## 📋 Übersicht
 
 - **Datei:** `test_utils.py`
-- **Zeilen:** 619
-- **Analysiert:** 2025-06-17T14:46:23
+- **Zeilen:** 620
+- **Analysiert:** 2025-06-23T13:19:59
 
 ### Beschreibung
 
@@ -58,7 +58,7 @@ Datum: 2025-06-16
 
 #### `estimate_test_duration(document_paths: List[str], models: List[str]) -> Dict[str, Any]`
 
-**Beschreibung:** Schätzt Testdauer basierend auf Dokumenten und Modellen
+**Beschreibung:** Führt aus: base_time_per_mb = 30...
 
 ## 🏗️ Klassen
 

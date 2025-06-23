@@ -3,8 +3,8 @@
 ## 📋 Übersicht
 
 - **Datei:** `config.py`
-- **Zeilen:** 231
-- **Analysiert:** 2025-06-17T14:46:22
+- **Zeilen:** 547
+- **Analysiert:** 2025-06-23T13:19:59
 
 ## 📦 Imports
 
@@ -28,6 +28,9 @@
 - ⚙️ **`get_documents_path(self)`**
   - Führt aus: return self.documents_path...
 
+- ⚙️ **`get_supported_file_types(self)`**
+  - Gibt eine Liste der unterstützten Dateiformate zurück
+
 - ⚙️ **`get_available_models(self)`**
   - Gibt Liste der verfügbaren Modellnamen zurück
 
@@ -43,6 +46,27 @@
 - ⚙️ **`get_models_by_capability(self)`**
   - Gruppiert Modelle nach ihren Fähigkeiten
 
+- ⚙️ **`get_available_embedding_models(self)`**
+  - Gibt alle verfügbaren Embedding-Modelle zurück
+
+- ⚙️ **`get_embedding_model_info(self, model_name)`**
+  - Gibt detaillierte Informationen zu einem Embedding-Modell zurück
+
+- ⚙️ **`get_best_embedding_model_for_german(self)`**
+  - Gibt das beste verfügbare Embedding-Modell für deutsche Texte zurück
+
+- ⚙️ **`get_embedding_models_by_quality(self)`**
+  - Gruppiert Embedding-Modelle nach deutscher Qualität
+
+- ⚙️ **`get_similarity_threshold(self, embedding_model)`**
+  - Gibt den empfohlenen Similarity-Threshold für ein Embedding-Modell zurück
+
+- ⚙️ **`get_optimal_chunk_size(self, embedding_model, file_size_mb = None)`**
+  - Bestimmt optimale Chunk-Größe basierend auf Embedding-Modell und Dateigröße
+
+- ⚙️ **`get_retrieval_strategy(self, embedding_model, document_count = 1)`**
+  - Bestimmt optimale Retrieval-Strategie
+
 - ⚙️ **`calculate_context_limits(self, model_name, prompt_overhead = None, answer_reserve = None)`**
   - Berechnet die verfügbaren Context-Token für ein Modell
 
@@ -57,6 +81,9 @@
 
 - ⚙️ **`log_model_selection(self, model_name)`**
   - Loggt Informationen zur Modell-Auswahl
+
+- ⚙️ **`log_embedding_selection(self, embedding_model)`**
+  - Loggt Informationen zur Embedding-Modell-Auswahl
 
 **Private Methoden:**
 - `__init__()` - Führt aus: self.base_path = Pa...

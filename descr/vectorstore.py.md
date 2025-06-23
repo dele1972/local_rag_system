@@ -3,8 +3,8 @@
 ## 📋 Übersicht
 
 - **Datei:** `vectorstore.py`
-- **Zeilen:** 457
-- **Analysiert:** 2025-06-17T14:46:23
+- **Zeilen:** 448
+- **Analysiert:** 2025-06-23T13:19:59
 
 ## 📦 Imports
 
@@ -104,10 +104,6 @@
 #### `list_vectorstores(base_directory)`
 
 **Beschreibung:** Liste alle verfügbaren Vektorspeicher in einem Verzeichnis auf
-
-#### `get_supported_file_types()`
-
-**Beschreibung:** Gibt eine Liste der unterstützten Dateiformate zurück
 
 #### `get_vectorstore(documents, model_name = 'nomic-embed-text', persist_directory = None, chunk_size = 1000, chunk_overlap = 200)`
 

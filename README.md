@@ -125,7 +125,13 @@ python main.py --chain-recommendation --model phi4-mini-reasoning:3.8b
 
 #### Testdurchführung
 
-##### 1. Erst analysieren (6.5MB Datei)
+Öffne ein Shell-Terminal zum Container:
+
+```powershell
+docker exec -it local_rag_system-rag-app-1 bash
+```
+
+##### 1. Erst analysieren (6.5MB Datei) ✅
 
 ```bash
 python run_rag_tests.py --analyze documents/large_german_doc.pdf
@@ -135,7 +141,7 @@ python run_rag_tests.py --analyze documents/large_german_doc.pdf
 docker exec -it local_rag_system-rag-app-1 python3 ./app/run_rag_tests.py --analyze documents/large_german_doc.pdf
 ```
 
-##### 2. Quick-Test für erste Einschätzung
+##### 2. Quick-Test für erste Einschätzung ❌
 
 ```bash
 python run_rag_tests.py --quick-test documents/large_german_doc.pdf

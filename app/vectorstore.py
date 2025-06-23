@@ -236,6 +236,7 @@ def load_documents_from_file(file_path, chunk_size=1000, chunk_overlap=200):
     content = ""
     file_extension = os.path.splitext(file_path)[1].lower()
     
+    logger.debug(f"[DEBUG] Starte Verarbeitung von Datei: {file_path}")
     try:
         if file_extension in [".txt", ".md"]:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -293,7 +294,7 @@ def load_documents_from_file(file_path, chunk_size=1000, chunk_overlap=200):
             )]
     
     except Exception as e:
-        logger.error(f"Fehler beim Laden der Datei {file_path}: {e}")
+        logger.error(f"❌ Fehler beim Laden der Datei {file_path}: {e}")
         return []
 
 def load_documents(documents_path, chunk_size=1000, chunk_overlap=200):
@@ -309,7 +310,7 @@ def load_documents(documents_path, chunk_size=1000, chunk_overlap=200):
         Liste von LangChain-Dokumenten
     """
     documents = []
-    supported_extensions = get_supported_file_types()
+    supported_extensions = config.get_supported_file_types()
     
     if os.path.isfile(documents_path):
         # Einzelne Datei
@@ -398,16 +399,6 @@ def list_vectorstores(base_directory):
     
     return vectorstores
 
-def get_supported_file_types():
-    """Gibt eine Liste der unterstützten Dateiformate zurück"""
-    return [
-        ".txt", ".md",           # Text
-        ".pdf",                  # PDF
-        ".docx", ".doc",         # Word
-        ".xlsx", ".xls",         # Excel
-        ".pptx", ".ppt"          # PowerPoint
-    ]
-
 def get_vectorstore(documents, model_name="nomic-embed-text", persist_directory=None, chunk_size=1000, chunk_overlap=200):
     """
     Erstellt oder lädt einen Vektorspeicher
@@ -429,7 +420,7 @@ def get_vectorstore(documents, model_name="nomic-embed-text", persist_directory=
         documents = []
         
         # Lade alle unterstützten Dateien aus dem Pfad
-        supported_extensions = get_supported_file_types()
+        supported_extensions = config.get_supported_file_types()
         
         if os.path.isfile(documents_path):
             # Einzelne Datei

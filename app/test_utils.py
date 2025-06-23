@@ -559,12 +559,18 @@ class ReportGenerator:
         
         return html
 
-# Praktische Utility-Funktionen
+## Praktische Utility-Funktionen
 def quick_document_analysis(file_path: str) -> Dict[str, Any]:
     """Schnelle Dokument-Analyse für Vor-Test-Bewertung"""
+    logger.info(f"[DEBUG] Starte quick_document_analysis für: {file_path}")
     analyzer = DocumentAnalyzer()
-    metrics = analyzer.analyze_document(file_path)
-    
+    try:
+        metrics = analyzer.analyze_document(file_path)
+        logger.info(f"[DEBUG] Analyse-Metriken: {metrics}")
+    except Exception as e:
+        logger.exception(f"[ERROR] analyze_document() fehlgeschlagen:")
+        raise  # wichtig, damit es im äußeren try-except gefangen wird
+
     # Empfehlungen basierend auf Analyse
     recommendations = []
     
@@ -574,46 +580,41 @@ def quick_document_analysis(file_path: str) -> Dict[str, Any]:
         recommendations.append("Komplexer Text - kleinere Chunks verwenden")
     if metrics.language_detected != "german":
         recommendations.append("Nicht-deutsche Sprache erkannt - Embedding-Modell prüfen")
+    if not metrics:
+        raise ValueError("metrics ist None – analyze_document() hat nichts geliefert")
     
     return {
         "metrics": metrics,
         "recommendations": recommendations
     }
 
-def estimate_test_duration(document_paths: List[str], 
-                          models: List[str]) -> Dict[str, Any]:
-    """Schätzt Testdauer basierend auf Dokumenten und Modellen"""
-    total_size_mb = sum(os.path.getsize(path) / (1024 * 1024) 
-                       for path in document_paths if os.path.exists(path))
-    
-    # Basis-Schätzung: ~30s pro MB pro Modell für Standard-Tests
+def estimate_test_duration(document_paths: List[str], models: List[str]) -> Dict[str, Any]:
     base_time_per_mb = 30
-    num_configs_per_doc = 12  # Verschiedene Chunk-Größen, Chain-Types, etc.
-    
-    estimated_seconds = total_size_mb * base_time_per_mb * len(models) * num_configs_per_doc
-    
-    return {
-        "total_documents": len(document_paths),
-        "total_size_mb": total_size_mb,
-        "models_count": len(models),
-        "estimated_tests": len(document_paths) * len(models) * num_configs_per_doc,
-        "estimated_duration_minutes": estimated_seconds / 60,
-        "estimated_duration_hours": estimated_seconds / 3600
-    }
+    num_configs_per_doc = 12
 
-if __name__ == "__main__":
-    # Beispiel-Nutzung der Utilities
-    print("🔧 RAG Test Utilities geladen")
-    
-    # Dokument-Analyse Beispiel
-    test_file = "test_document.pdf"
-    if os.path.exists(test_file):
-        analysis = quick_document_analysis(test_file)
-        print(f"📄 Dokument-Analyse für {test_file}:")
-        print(f"   Größe: {analysis['metrics'].file_size_mb:.1f} MB")
-        print(f"   Wörter: {analysis['metrics'].word_count}")
-        print(f"   Komplexität: {analysis['metrics'].complexity_score}")
-        print(f"   Sprache: {analysis['metrics'].language_detected}")
-        print("💡 Empfehlungen:")
-        for rec in analysis['recommendations']:
-            print(f"   • {rec}")
+    per_file_estimates = []
+    total_size_mb = 0.0
+    total_seconds = 0.0
+
+    for path in document_paths:
+        if not os.path.exists(path):
+            continue
+        size_mb = os.path.getsize(path) / (1024 * 1024)
+        duration = size_mb * base_time_per_mb * len(models) * num_configs_per_doc
+        per_file_estimates.append({
+            "file_path": path,
+            "file_size_mb": round(size_mb, 2),
+            "estimated_duration_minutes": round(duration / 60, 1)
+        })
+        total_size_mb += size_mb
+        total_seconds += duration
+
+    return {
+        "total_documents": len(per_file_estimates),
+        "total_size_mb": round(total_size_mb, 2),
+        "models_count": len(models),
+        "estimated_tests": len(per_file_estimates) * len(models) * num_configs_per_doc,
+        "estimated_duration_minutes": round(total_seconds / 60, 1),
+        "estimated_duration_hours": round(total_seconds / 3600, 2),
+        "per_file_estimates": per_file_estimates
+    }

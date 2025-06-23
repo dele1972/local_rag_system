@@ -146,12 +146,27 @@ def run_document_analysis(document_paths: List[str]) -> Dict[str, Any]:
     
     analysis_results = {}
     total_size = 0
+
+    logger.debug(f"[DEBUG] Analysiert werden (run_rag_tests.py:run_document_analysis()): {document_paths}")
     
     for doc_path in document_paths:
+        logger.info(f"[TEST] quick_document_analysis vorhanden? {'JA' if quick_document_analysis else 'NEIN'}")
         try:
-            # Fallback für einfache Analyse wenn test_utils nicht verfügbar
             if quick_document_analysis:
-                analysis = quick_document_analysis(doc_path)
+                try:
+                    analysis = quick_document_analysis(doc_path)
+                    logger.debug(f"🔍 Analyse-Ergebnis: {analysis}")
+                except Exception as qe:
+                    logger.exception(f"[ERROR] quick_document_analysis() fehlgeschlagen mit Exception:")
+                    import traceback
+                    traceback.print_exc()
+                    analysis = {
+                        'file_size_mb': 0.0,
+                        'estimated_tokens': 0,
+                        'language': 'unbekannt',
+                        'analysis_method': 'error_in_quick_analysis',
+                        'error': str(qe)
+                    }
             else:
                 # Einfache Fallback-Analyse
                 file_path = Path(doc_path)
@@ -162,35 +177,54 @@ def run_document_analysis(document_paths: List[str]) -> Dict[str, Any]:
                     'language': 'deutsch (geschätzt)',
                     'analysis_method': 'fallback'
                 }
-            
-            analysis_results[doc_path] = analysis
+
+            # Extra flachere Kopie für Anzeigezwecke
+            flat = {}
+            if "metrics" in analysis:
+                metrics = analysis["metrics"]
+                flat = {
+                    "file_size_mb": getattr(metrics, "file_size_mb", 0),
+                    "estimated_tokens": getattr(metrics, "word_count", 0),
+                    "language": getattr(metrics, "language_detected", "unbekannt")
+                }
+
+            analysis_results[doc_path] = {**analysis, **flat}
+
             total_size += analysis.get('file_size_mb', 0)
-            
-            logger.info(f"📄 {Path(doc_path).name}: "
-                       f"{analysis.get('file_size_mb', 0):.1f}MB, "
-                       f"~{analysis.get('estimated_tokens', 0):,} Tokens")
+
+            if "metrics" in analysis:
+                m = analysis["metrics"]
+                logger.info(f"📄 {Path(doc_path).name}: "
+                            f"{getattr(m, 'file_size_mb', 0):.1f}MB, "
+                            f"~{getattr(m, 'word_count', 0):,} Tokens "
+                            f"(Sprache: {getattr(m, 'language_detected', 'unbekannt')})")
+            else:
+                logger.warning(f"📄 {Path(doc_path).name}: Keine Analyse-Metriken verfügbar.")
+
         except Exception as e:
             logger.error(f"❌ Fehler bei Analyse von {doc_path}: {e}")
             analysis_results[doc_path] = {"error": str(e)}
-    
-    # Geschätzte Testdauer
-    try:
-        if estimate_test_duration:
-            duration_estimate = estimate_test_duration(document_paths, DEFAULT_MODELS)
-            analysis_results['_duration_estimate'] = duration_estimate
-            logger.info(f"⏱️ Geschätzte Testdauer: {duration_estimate.get('total_minutes', 'unbekannt')} Minuten")
-        else:
-            # Einfache Schätzung
-            total_tests = len(document_paths) * len(DEFAULT_MODELS) * 3
-            estimated_minutes = total_tests * 2  # 2 Minuten pro Test
-            analysis_results['_duration_estimate'] = {
-                'total_minutes': estimated_minutes,
-                'method': 'fallback_estimate'
-            }
-            logger.info(f"⏱️ Geschätzte Testdauer: ~{estimated_minutes} Minuten (grobe Schätzung)")
-    except Exception as e:
-        logger.warning(f"⚠️ Konnte Testdauer nicht schätzen: {e}")
-    
+
+    # Geschätzte Testdauer berechnen
+    total_tokens = 0
+    for doc_path, result in analysis_results.items():
+        if doc_path.startswith("_") or "error" in result:
+            continue
+        total_tokens += result.get("estimated_tokens", 0)
+
+    # Konfig: 3 Fragen pro Modell, ca. 1.5s pro 1000 Token + Rechenzeit
+    models = DEFAULT_MODELS
+    questions_per_model = 3
+    tokens_pro_test = total_tokens
+    test_anzahl = len(models) * questions_per_model
+    minuten_schätzung = max(1, int((tokens_pro_test / 1000 * 1.5 * test_anzahl) / 60))  # ganz grob
+
+    analysis_results["_duration_estimate"] = {
+        "total_minutes": minuten_schätzung,
+        "method": "token_based_estimate"
+    }
+    logger.info(f"⏱️ Geschätzte Testdauer: {minuten_schätzung} Minuten")
+
     analysis_results['_summary'] = {
         'total_documents': len(document_paths),
         'total_size_mb': total_size,
@@ -433,9 +467,10 @@ Beispiele:
             if analyze_path.is_file():
                 doc_paths = [str(analyze_path)]
             elif analyze_path.is_dir():
-                doc_paths = [str(p) for p in analyze_path.rglob('*.pdf')]
-                doc_paths.extend([str(p) for p in analyze_path.rglob('*.txt')])
-                doc_paths.extend([str(p) for p in analyze_path.rglob('*.docx')])
+                supported_types = config.get_supported_file_types()
+                doc_paths = []
+                for ext in supported_types:
+                    doc_paths.extend(str(p) for p in analyze_path.rglob(f'*{ext}'))
             
             if not doc_paths:
                 logger.error("❌ Keine Dokumente gefunden")
@@ -493,10 +528,11 @@ Beispiele:
                 if docs_path.is_file():
                     doc_paths = [str(docs_path)]
                 elif docs_path.is_dir():
-                    doc_paths = [str(p) for p in docs_path.rglob('*.pdf')]
-                    doc_paths.extend([str(p) for p in docs_path.rglob('*.txt')])
-                    doc_paths.extend([str(p) for p in docs_path.rglob('*.docx')])
-            
+                    supported_types = config.get_supported_file_types()
+                    doc_paths = []
+                    for ext in supported_types:
+                        doc_paths.extend(str(p) for p in docs_path.rglob(f'*{ext}'))
+
             if not doc_paths:
                 logger.error("❌ Keine Dokumente gefunden")
                 sys.exit(1)
