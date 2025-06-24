@@ -3,7 +3,8 @@ from langchain_community.document_loaders import TextLoader, UnstructuredMarkdow
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pathlib import Path
 import os
-from app.vectorstore import load_documents_from_file, get_supported_file_types
+from app.vectorstore import load_documents_from_file
+from app.config import config
 
 def get_chunk_size_for_file(file_size_mb):
     """Bestimmt optimale Chunk-Größe basierend auf Dateigröße"""
@@ -40,7 +41,7 @@ def load_documents_from_path(path):
     docs = []
     loaded_files = []
     skipped_files = []
-    supported_extensions = get_supported_file_types()
+    supported_extensions = config.get_supported_file_types()
     file_stats = {}  # Für Statistiken
     
     for file in Path(path).rglob("*"):
@@ -188,7 +189,7 @@ def load_single_file(file_path):
         
         file_extension = file_path.suffix.lower()
         file_size_mb = get_file_size_mb(str(file_path))
-        supported_extensions = get_supported_file_types()
+        supported_extensions = config.get_supported_file_types()
         
         print(f"📁 Lade Einzeldatei: {file_path.name} ({file_size_mb:.2f}MB)")
         
@@ -211,7 +212,7 @@ def get_file_stats(path):
     """Get detailed statistics about files in a directory"""
     stats = {}
     size_stats = {'total_mb': 0, 'large_files': 0, 'medium_files': 0, 'small_files': 0}
-    supported_extensions = get_supported_file_types()
+    supported_extensions = config.get_supported_file_types()
     
     for file in Path(path).rglob("*"):
         if file.is_file():

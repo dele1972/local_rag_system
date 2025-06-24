@@ -3,8 +3,8 @@
 ## 📋 Übersicht
 
 - **Datei:** `loader.py`
-- **Zeilen:** 256
-- **Analysiert:** 2025-06-23T13:19:59
+- **Zeilen:** 257
+- **Analysiert:** 2025-06-24T10:56:33
 
 ## 📦 Imports
 
@@ -17,7 +17,8 @@
 - `from langchain_community.document_loaders import TextLoader, UnstructuredMarkdownLoader`
 
 ### Local/App
-- `from app.vectorstore import load_documents_from_file, get_supported_file_types`
+- `from app.config import config`
+- `from app.vectorstore import load_documents_from_file`
 
 ## ⚙️ Funktionen
 
