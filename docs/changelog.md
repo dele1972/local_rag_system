@@ -2,6 +2,56 @@
 
 ## Entwickler Version
 
+### deutsche Embedding-Optimierung
+
+#### Erwartete Verbesserungen
+
+- Für 6.5MB große, deutsche Dokumente sollten folgende Verbesserungen sichtbar sein:
+
+1. Bessere Similarity-Scores durch deutsche Embeddings
+2. Relevantere Retrieval-Ergebnisse durch optimierte Chunking
+3. Automatische Parameter-Anpassung für große Dateien
+4. Eliminierung der Token-Fehler durch intelligente k-Wert-Bestimmung
+
+#### 1. Deutsche Embedding-Modelle
+
+- **HuggingFace Integration**:
+	- `intfloat/multilingual-e5-large` (beste Qualität)
+- **Erweiterte Ollama-Unterstützung**:
+	- `mxbai-embed-large`, `snowflake-arctic-embed`
+- **Automatische Modell-Auswahl**:
+	- Wählt das beste verfügbare deutsche Modell
+
+#### 2. EmbeddingManager-Klasse
+
+- Verwaltet verschiedene Embedding-Typen zentral
+- Caching für bessere Performance
+- Automatisches Fallback bei Fehlern
+
+#### 3. Deutsche Text-Optimierung
+
+- **Optimierte Separatoren**:
+	- Berücksichtigt deutsche Satzzeichen
+- **Intelligente Chunk-Größen**:
+	- Anpassung basierend auf Modell und Dateigröße
+- **Post-Processing**:
+	- Filtert zu kleine Chunks
+
+#### 4. Similarity-Score-Analyse
+
+- Analysiert Retrieval-Qualität automatisch
+- Empfiehlt optimale Threshold-Werte
+- Bestimmt optimale k-Werte für große Dokumente
+
+#### 5. Optimierung für große Dateien
+
+- **Spezielle Retrieval-Funktion**:
+	- `optimize_retrieval_for_large_documents()`
+- **Token-Budget-Management**:
+	- Berücksichtigt Modell-Limits
+- **Adaptive Parameter**:
+	- Anpassung basierend auf Dateigröße
+
 ### RAG Test Framework Suite - Vollständige Test-Komponente
 
 #### 📦 Komponenten hinzugefügt:
